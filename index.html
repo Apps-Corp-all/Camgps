@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camara Corporativa con Geolocalizacion y Galeria</title>
+    <!-- Tailwind CSS para diseño moderno -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Lucide Icons para iconos profesionales -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans select-none overflow-x-hidden">
+
+    <!-- Header de Estado y Configuración -->
+    <header class="w-full bg-slate-900/80 backdrop-blur-md border-b border-slate-800 p-3 flex justify-between items-center z-20">
+        <div class="flex items-center space-x-2">
+            <span class="w-3 h-3 rounded-full bg-red-500 animate-pulse" id="status-dot"></span>
+            <span class="text-xs font-semibold tracking-wide text-slate-300" id="status-text">Buscando GPS...</span>
+        </div>
+        <div class="flex items-center space-x-3">
+            <button onclick="toggleSettings()" class="p-2 rounded-full bg-slate-800 hover:bg-slate-700 transition text-slate-200">
+                <i data-lucide="settings" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Visor de Cámara y HUD -->
+    <main class="relative flex-1 flex flex-col items-center justify-center bg-black overflow-hidden">
+        
+        <!-- Elemento de Video -->
+        <video id="camera-feed" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover"></video>
+        
+        <!-- Elemento Canvas Oculto para Procesar Fotos -->
+        <canvas id="snapshot-canvas" class="hidden"></canvas>
+        <canvas id="video-canvas" class="hidden"></canvas>
+
+        <!-- Overlay / HUD Corporativo (Lo que se estampa en la foto/video) -->
+        <div id="hud-watermark" class="absolute inset-x-4 bottom-4 bg-slate-900/85 backdrop-blur-md border border-slate-700/60 rounded-2xl p-4 shadow-2xl flex flex-col space-y-2 pointer-events-none z-10 transition-all">
+            
+            <!-- Fila superior: Logo y Nombre de Empresa -->
+            <div class="flex justify-between items-center border-b border-slate-700/50 pb-2">
+                <div class="flex items-center space-x-2">
+                    <div class="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center font-black text-white text-xs shadow-inner" id="logo-container">
+                        LOGO
+                    </div>
+                    <div>
+                        <h2 class="text-xs font-bold tracking-wider text-white uppercase" id="company-name-display">EMPRESA S.A.</h2>
+                        <p class="text-[10px] text-slate-400" id="project-name-display">Inspección de Campo</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span class="text-xs font-mono font-bold text-blue-400 block" id="hud-time">--:--:--</span>
+                    <span class="text-[10px] font-mono text-slate-400 block" id="hud-date">--/--/----</span>
+                </div>
+            </div>
+
+            <!-- Fila inferior: Coordenadas, Brújula y Notas -->
+            <div class="grid grid-cols-2 gap-2 pt-1 text-xs font-mono">
+                <div class="flex items-center space-x-1.5 text-slate-300">
+                    <i data-lucide="map-pin" class="w-3.5 h-3.5 text-red-400 shrink-0"></i>
+                    <span id="hud-coords" class="truncate">Lat: 0.0000, Lon: 0.0000</span>
+                </div>
+                <div class="flex items-center justify-end space-x-1.5 text-slate-300">
+                    <i data-lucide="compass" class="w-3.5 h-3.5 text-amber-400 shrink-0"></i>
+                    <span id="hud-compass">N (0°)</span>
+                </div>
+            </div>
+            
+            <div class="text-[10px] text-slate-400 italic pt-1 border-t border-slate-800 flex items-center space-x-1">
+                <i data-lucide="file-text" class="w-3 h-3 text-slate-500"></i>
+                <span id="hud-notes" class="truncate">Sin notas adicionales</span>
+            </div>
+        </div>
+
+        <!-- Indicador de Grabación de Video Activa -->
+        <div id="recording-badge" class="absolute top-4 right-4 bg-red-600/90 text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider flex items-center space-x-2 hidden animate-pulse shadow-lg z-20">
+            <span class="w-2.5 h-2.5 bg-white rounded-full"></span>
+            <span id="recording-time">00:00</span>
+        </div>
+    </main>
+
+    <!-- Controles de Captura -->
+    <footer class="w-full bg-slate-900 border-t border-slate-800 p-5 flex justify-around items-center z-20">
+        
+        <!-- Botón de Galería Interna -->
+        <button onclick="openGalleryModal()" class="relative p-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition flex flex-col items-center">
+            <i data-lucide="folder-open" class="w-6 h-6 text-blue-400"></i>
+            <span class="text-[10px] mt-1 font-medium text-slate-400">Galería</span>
+            <span id="gallery-badge" class="absolute -top-1 -right-1 bg-blue-600 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold hidden">0</span>
+        </button>
+
+        <!-- Botón de Captura de Foto -->
+        <button onclick="capturePhoto()" class="w-16 h-16 rounded-full bg-white border-4 border-slate-400 hover:scale-105 active:scale-95 transition flex items-center justify-center shadow-lg">
+            <div class="w-12 h-12 rounded-full bg-white border-2 border-slate-900"></div>
+        </button>
+
+        <!-- Botón de Grabación de Video -->
+        <button id="btn-record" onclick="toggleVideoRecording()" class="p-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition flex flex-col items-center">
+            <i data-lucide="video" class="w-6 h-6 text-red-400" id="video-icon"></i>
+            <span class="text-[10px] mt-1 font-medium text-slate-400" id="video-text">Grabar</span>
+        </button>
+    </footer>
+
+    <!-- MODAL DE CONFIGURACIÓN -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-3xl p-6 shadow-2xl flex flex-col space-y-4">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+                <h3 class="font-bold text-base text-white flex items-center space-x-2">
+                    <i data-lucide="settings" class="w-5 h-5 text-blue-400"></i>
+                    <span>Configuración de Marca</span>
+                </h3>
+                <button onclick="toggleSettings()" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="text-slate-400 block mb-1 font-medium">Nombre de la Empresa</label>
+                    <input type="text" id="input-company" value="EMPRESA S.A." oninput="updateSettings()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="text-slate-400 block mb-1 font-medium">Nombre del Proyecto / Obra</label>
+                    <input type="text" id="input-project" value="Inspección de Campo" oninput="updateSettings()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="text-slate-400 block mb-1 font-medium">Notas Adicionales / Inspector</label>
+                    <input type="text" id="input-notes" value="Revisión técnica de infraestructura" oninput="updateSettings()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                </div>
+            </div>
+
+            <button onclick="toggleSettings()" class="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold text-white transition text-sm shadow-lg shadow-blue-600/30">
+                Guardar y Cerrar
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL DE GALERÍA INTERNA -->
+    <div id="gallery-modal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex flex-col hidden">
+        <header class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900">
+            <h2 class="font-bold text-base text-white flex items-center space-x-2">
+                <i data-lucide="folder-open" class="w-5 h-5 text-blue-400"></i>
+                <span>Galería de Capturas (<span id="gallery-count">0</span>)</span>
+            </h2>
+            <button onclick="openGalleryModal()" class="p-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-4 grid grid-cols-2 sm:grid-cols-3 gap-3 content-start" id="gallery-grid">
+            <!-- Las fotos y videos capturados se insertarán aquí dinámicamente -->
+        </div>
+    </div>
+
+    <!-- MODAL DE VISUALIZAR ARCHIVO INDIVIDUAL -->
+    <div id="viewer-modal" class="fixed inset-0 bg-black/95 z-60 flex flex-col justify-between p-4 hidden">
+        <div class="flex justify-between items-center z-10">
+            <span id="viewer-date" class="text-xs text-slate-400 font-mono"></span>
+            <button onclick="closeViewer()" class="p-2 rounded-full bg-slate-800 text-white">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <div class="flex-1 flex items-center justify-center relative overflow-hidden my-2" id="viewer-container">
+            <!-- Contenido dinámico (imagen o video) -->
+        </div>
+
+        <div class="flex justify-around items-center p-2 bg-slate-900/80 rounded-2xl border border-slate-800">
+            <button onclick="downloadCurrentMedia()" class="flex items-center space-x-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold text-white transition shadow-lg">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>Guardar en Dispositivo</span>
+            </button>
+            <button onclick="deleteCurrentMedia()" class="flex items-center space-x-1.5 px-4 py-2 bg-red-600/80 hover:bg-red-600 rounded-xl text-xs font-bold text-white transition">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                <span>Eliminar</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Notificación Toast -->
+    <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 bg-slate-800 border border-slate-700 text-white px-4 py-2 rounded-full text-xs font-semibold shadow-2xl transition-all duration-300 opacity-0 pointer-events-none z-50 flex items-center space-x-2">
+        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+        <span id="toast-message">¡Guardado con éxito!</span>
+    </div>
+
+    <!-- Script de Funcionalidad -->
+    <script>
+        let videoStream = null;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let isRecording = false;
+        let recordingTimer = null;
+        let recordingSeconds = 0;
+
+        let currentLat = 0.0;
+        let currentLon = 0.0;
+        let currentHeading = 'N (0°)';
+        let galleryItems = []; // Almacena objetos { id, type, url, blob, date }
+        let currentViewerIndex = null;
+
+        // Inicializar Iconos
+        lucide.createIcons();
+
+        // Iniciar Cámara y Sensores al cargar
+        window.addEventListener('DOMContentLoaded', () => {
+            initCamera();
+            initGeolocation();
+            initCompass();
+            updateClock();
+            setInterval(updateClock, 1000);
+        });
+
+        async function initCamera() {
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+                    audio: true
+                });
+                document.getElementById('camera-feed').srcObject = videoStream;
+            } catch (err) {
+                alert("Error al acceder a la cámara: Asegúrate de dar permisos.");
+                console.error(err);
+            }
+        }
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('hud-time').innerText = now.toLocaleTimeString();
+            document.getElementById('hud-date').innerText = now.toLocaleDateString();
+        }
+
+        function initGeolocation() {
+            if ('geolocation' in navigator) {
+                navigator.geolocation.watchPosition((position) => {
+                    currentLat = position.coords.latitude;
+                    currentLon = position.coords.longitude;
+                    document.getElementById('hud-coords').innerText = `Lat: ${currentLat.toFixed(5)}, Lon: ${currentLon.toFixed(5)}`;
+                    document.getElementById('status-dot').className = "w-3 h-3 rounded-full bg-emerald-500";
+                    document.getElementById('status-text').innerText = "GPS Activo";
+                }, (error) => {
+                    document.getElementById('status-dot').className = "w-3 h-3 rounded-full bg-amber-500";
+                    document.getElementById('status-text').innerText = "GPS No disponible (Simulado)";
+                }, { enableHighAccuracy: true });
+            }
+        }
+
+        function initCompass() {
+            if (window.DeviceOrientationEvent) {
+                window.addEventListener('deviceorientation', (event) => {
+                    let alpha = event.alpha;
+                    if (alpha !== null) {
+                        let direction = getCardinalDirection(alpha);
+                        currentHeading = `${direction} (${Math.round(alpha)}°)`;
+                        document.getElementById('hud-compass').innerText = currentHeading;
+                    }
+                });
+            }
+        }
+
+        function getCardinalDirection(angle) {
+            const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+            return directions[Math.round(angle / 45) % 8];
+        }
+
+        function toggleSettings() {
+            const modal = document.getElementById('settings-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        function updateSettings() {
+            const company = document.getElementById('input-company').value;
+            const project = document.getElementById('input-project').value;
+            const notes = document.getElementById('input-notes').value;
+
+            document.getElementById('company-name-display').innerText = company;
+            document.getElementById('project-name-display').innerText = project;
+            document.getElementById('hud-notes').innerText = notes;
+            document.getElementById('logo-container').innerText = company.substring(0, 2).toUpperCase();
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').innerText = msg;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        // --- CAPTURA DE FOTO CON MARCA DE AGUA ESTAMPADA ---
+        async function capturePhoto() {
+            const video = document.getElementById('camera-feed');
+            const canvas = document.getElementById('snapshot-canvas');
+            canvas.width = video.videoWidth || 1280;
+            canvas.height = video.videoHeight || 720;
+            const ctx = canvas.getContext('2d');
+
+            // Dibujar fotograma de video
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Dibujar rectángulo de marca de agua en el canvas
+            const margin = 40;
+            const boxHeight = 180;
+            const boxWidth = canvas.width - (margin * 2);
+            const boxX = margin;
+            const boxY = canvas.height - boxHeight - margin;
+
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            ctx.roundRect(boxX, boxY, boxWidth, boxHeight, 20);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(51, 65, 85, 0.8)';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Textos dentro de la foto
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = 'bold 28px sans-serif';
+            const company = document.getElementById('input-company').value;
+            ctx.fillText(company, boxX + 30, boxY + 45);
+
+            ctx.font = '22px sans-serif';
+            ctx.fillStyle = '#94A3B8';
+            const project = document.getElementById('input-project').value;
+            ctx.fillText(project, boxX + 30, boxY + 80);
+
+            // Fecha y hora
+            ctx.textAlign = 'right';
+            ctx.font = 'bold 24px monospace';
+            ctx.fillStyle = '#60A5FA';
+            ctx.fillText(document.getElementById('hud-time').innerText, boxX + boxWidth - 30, boxY + 50);
+            ctx.font = '18px monospace';
+            ctx.fillStyle = '#94A3B8';
+            ctx.fillText(document.getElementById('hud-date').innerText, boxX + boxWidth - 30, boxY + 80);
+
+            // Coordenadas y Brújula
+            ctx.textAlign = 'left';
+            ctx.font = '20px monospace';
+            ctx.fillStyle = '#E2E8F0';
+            ctx.fillText(`GPS: Lat ${currentLat.toFixed(5)}, Lon ${currentLon.toFixed(5)}`, boxX + 30, boxY + 130);
+            
+            ctx.textAlign = 'right';
+            ctx.fillText(`Rumbo: ${currentHeading}`, boxX + boxWidth - 30, boxY + 130);
+
+            // Notas
+            ctx.textAlign = 'left';
+            ctx.font = 'italic 18px sans-serif';
+            ctx.fillStyle = '#94A3B8';
+            ctx.fillText(`Nota: ${document.getElementById('input-notes').value}`, boxX + 30, boxY + 165);
+
+            // Convertir a Blob y guardar en galería interna
+            canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const item = {
+                    id: Date.now(),
+                    type: 'image',
+                    url: url,
+                    blob: blob,
+                    date: new Date().toLocaleString()
+                };
+                galleryItems.unshift(item);
+                updateGalleryUI();
+                showToast("¡Foto capturada y guardada en galería!");
+            }, 'image/jpeg', 0.95);
+        }
+
+        // --- GRABACIÓN DE VIDEO ---
+        function toggleVideoRecording() {
+            if (!isRecording) {
+                startRecording();
+            } else {
+                stopRecording();
+            }
+        }
+
+        function startRecording() {
+            recordedChunks = [];
+            try {
+                mediaRecorder = new MediaRecorder(videoStream, { mimeType: 'video/webm;codecs=vp9' });
+            } catch (e) {
+                mediaRecorder = new MediaRecorder(videoStream);
+            }
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) recordedChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const item = {
+                    id: Date.now(),
+                    type: 'video',
+                    url: url,
+                    blob: blob,
+                    date: new Date().toLocaleString()
+                };
+                galleryItems.unshift(item);
+                updateGalleryUI();
+                showToast("¡Video grabado y guardado en galería!");
+            };
+
+            mediaRecorder.start();
+            isRecording = true;
+            document.getElementById('video-icon').className = "w-6 h-6 text-white";
+            document.getElementById('btn-record').className = "p-3 rounded-2xl bg-red-600 text-white transition flex flex-col items-center animate-pulse";
+            document.getElementById('recording-badge').classList.remove('hidden');
+
+            recordingSeconds = 0;
+            recordingTimer = setInterval(() => {
+                recordingSeconds++;
+                let mins = Math.floor(recordingSeconds / 60).toString().padStart(2, '0');
+                let secs = (recordingSeconds % 60).toString().padStart(2, '0');
+                document.getElementById('recording-time').innerText = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function stopRecording() {
+            mediaRecorder.stop();
+            isRecording = false;
+            clearInterval(recordingTimer);
+            document.getElementById('btn-record').className = "p-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition flex flex-col items-center";
+            document.getElementById('video-icon').className = "w-6 h-6 text-red-400";
+            document.getElementById('recording-badge').classList.add('hidden');
+        }
+
+        // --- GESTIÓN DE GALERÍA ---
+        function openGalleryModal() {
+            const modal = document.getElementById('gallery-modal');
+            modal.classList.toggle('hidden');
+            updateGalleryUI();
+        }
+
+        function updateGalleryUI() {
+            const grid = document.getElementById('gallery-grid');
+            const badge = document.getElementById('gallery-badge');
+            const count = document.getElementById('gallery-count');
+            
+            count.innerText = galleryItems.length;
+            if (galleryItems.length > 0) {
+                badge.innerText = galleryItems.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+
+            grid.innerHTML = '';
+            galleryItems.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = "relative aspect-square bg-slate-900 rounded-xl overflow-hidden border border-slate-800 cursor-pointer hover:opacity-90 transition";
+                div.onclick = () => openViewer(index);
+
+                if (item.type === 'image') {
+                    div.innerHTML = `<img src="${item.url}" class="w-full h-full object-cover">`;
+                } else {
+                    div.innerHTML = `
+                        <video src="${item.url}" class="w-full h-full object-cover"></video>
+                        <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+                            <i data-lucide="play-circle" class="w-10 h-10 text-white"></i>
+                        </div>`;
+                }
+                grid.appendChild(div);
+            });
+            lucide.createIcons();
+        }
+
+        function openViewer(index) {
+            currentViewerIndex = index;
+            const item = galleryItems[index];
+            const container = document.getElementById('viewer-container');
+            document.getElementById('viewer-date').innerText = item.date;
+
+            container.innerHTML = '';
+            if (item.type === 'image') {
+                container.innerHTML = `<img src="${item.url}" class="max-h-full max-w-full object-contain rounded-lg">`;
+            } else {
+                container.innerHTML = `<video src="${item.url}" controls autoplay class="max-h-full max-w-full object-contain rounded-lg"></video>`;
+            }
+
+            document.getElementById('viewer-modal').classList.remove('hidden');
+        }
+
+        function closeViewer() {
+            document.getElementById('viewer-modal').classList.add('hidden');
+            currentViewerIndex = null;
+        }
+
+        function downloadCurrentMedia() {
+            if (currentViewerIndex === null) return;
+            const item = galleryItems[currentViewerIndex];
+            const a = document.createElement('a');
+            a.href = item.url;
+            a.download = `Captura_${item.id}.${item.type === 'image' ? 'jpg' : 'webm'}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showToast("¡Archivo descargado en dispositivo!");
+        }
+
+        function deleteCurrentMedia() {
+            if (currentViewerIndex === null) return;
+            galleryItems.splice(currentViewerIndex, 1);
+            closeViewer();
+            updateGalleryUI();
+            showToast("Archivo eliminado de la galería");
+        }
+    </script>
+</body>
+</html>
