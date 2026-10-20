@@ -34,10 +34,10 @@
         <video id="camera-feed" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover"></video>
         <canvas id="snapshot-canvas" class="hidden"></canvas>
 
-        <!-- PANEL HUD EN PANTALLA (Con Fecha, Hora, Dirección, Clima, GPS y Brújula) -->
+        <!-- PANEL HUD EN PANTALLA -->
         <div class="absolute inset-x-2.5 bottom-2.5 bg-slate-900/80 backdrop-blur-xl border-2 border-slate-700/80 rounded-3xl p-4 shadow-[0_15px_40px_rgba(0,0,0,0.85)] flex flex-col space-y-3 pointer-events-none z-10">
             
-            <!-- SECCIÓN 1: Empresa + Fecha, Hora y GMT -->
+            <!-- SECCIÓN 1: Empresa + Fecha en Letras y Hora -->
             <div class="flex justify-between items-center bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700/80 shadow-inner">
                 <div class="flex items-center space-x-3.5">
                     <div class="w-14 h-14 bg-blue-600/90 rounded-2xl flex items-center justify-center font-black text-white text-2xl shadow-lg border border-blue-400/80" id="logo-container">
@@ -50,7 +50,7 @@
                 </div>
                 <div class="text-right">
                     <span class="text-xl font-mono font-black text-amber-400 block leading-tight" id="hud-time">--:--:--</span>
-                    <span class="text-xs font-mono font-bold text-slate-200 block mt-1"><span id="hud-date">--/--/----</span> <span id="hud-timezone" class="text-blue-400 font-black">GMT-6</span></span>
+                    <span class="text-xs font-mono font-bold text-slate-200 block mt-1"><span id="hud-date-text">Lunes, 19 de Octubre</span> <span id="hud-timezone" class="text-blue-400 font-black">GMT-6</span></span>
                 </div>
             </div>
 
@@ -267,7 +267,11 @@
         function updateClock() {
             const now = new Date();
             document.getElementById('hud-time').innerText = now.toLocaleTimeString();
-            document.getElementById('hud-date').innerText = now.toLocaleDateString();
+            
+            // Fecha en letras (ej: Lunes, 19 de Octubre de 2026)
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const dateLetterStr = now.toLocaleDateString('es-ES', options);
+            document.getElementById('hud-date-text').innerText = dateLetterStr.charAt(0).toUpperCase() + dateLetterStr.slice(1);
         }
 
         function calculateTimeZone() {
@@ -392,9 +396,9 @@
             const boxX = margin;
 
             const showCompass = document.getElementById('toggle-compass').checked;
-            const boxHeight = showCompass ? 350 : 270;
+            const boxHeight = showCompass ? 360 : 280;
             const boxY = canvas.height - boxHeight - margin;
-            const cornerRadius = 30;
+            const cornerRadius = 35;
 
             // Fondo semitransparente redondeado
             ctx.save();
@@ -410,23 +414,25 @@
             ctx.strokeStyle = 'rgba(71, 85, 105, 0.8)';
             ctx.stroke();
 
-            // 1. Empresa + Hora y Fecha Completa (DD/MM/YYYY)
+            // 1. Empresa + Hora y Fecha en Letras
             ctx.fillStyle = '#FFFFFF';
             ctx.font = 'bold 36px sans-serif';
             ctx.fillText(document.getElementById('input-company').value, boxX + 40, boxY + 50);
 
             const now = new Date();
             const timeStr = now.toLocaleTimeString();
-            const dateStr = now.toLocaleDateString();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            let dateLetterStr = now.toLocaleDateString('es-ES', options);
+            dateLetterStr = dateLetterStr.charAt(0).toUpperCase() + dateLetterStr.slice(1);
 
             ctx.font = 'bold 28px monospace';
             ctx.fillStyle = '#60A5FA';
             ctx.textAlign = 'right';
             ctx.fillText(timeStr, boxX + boxWidth - 40, boxY + 45);
 
-            ctx.font = 'bold 22px monospace';
+            ctx.font = 'bold 20px monospace';
             ctx.fillStyle = '#CBD5E1';
-            ctx.fillText(`${dateStr} (${currentGMTOffset})`, boxX + boxWidth - 40, boxY + 80);
+            ctx.fillText(`${dateLetterStr} (${currentGMTOffset})`, boxX + boxWidth - 40, boxY + 80);
 
             let currentY = 125;
             if (document.getElementById('toggle-address').checked) {
@@ -508,10 +514,10 @@
                 ctx.font = 'bold 24px monospace';
                 ctx.fillStyle = '#FBBF24';
                 ctx.fillText(`Brújula Activa: ${currentCardinal} (${currentHeadingDegrees}°)`, compassX + 55, compassY + 8);
-                currentY += 70;
+                currentY += 75;
             }
 
-            // Nota final
+            // Nota final dentro de la caja con margen seguro
             ctx.textAlign = 'left';
             ctx.font = 'italic 22px sans-serif';
             ctx.fillStyle = '#CBD5E1';
