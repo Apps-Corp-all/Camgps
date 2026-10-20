@@ -39,63 +39,59 @@
             <div id="mini-map" class="w-full h-full"></div>
         </div>
 
-        <!-- RECUADRO INFERIOR (Con el Logo Grande a la Derecha) -->
-        <div class="absolute inset-x-3 bottom-3 bg-slate-900/85 backdrop-blur-xl border-2 border-slate-700/80 rounded-3xl p-4 shadow-[0_15px_40px_rgba(0,0,0,0.85)] flex flex-col space-y-3 pointer-events-none z-10">
+        <!-- RECUADRO INFERIOR COMPACTO (Con Logo Gigante a la Derecha) -->
+        <div class="absolute inset-x-3 bottom-3 bg-slate-900/85 backdrop-blur-xl border-2 border-slate-700/80 rounded-3xl p-3.5 shadow-[0_15px_40px_rgba(0,0,0,0.85)] flex flex-col space-y-2 pointer-events-none z-10">
             
             <!-- Empresa, Fecha en Letras y Hora -->
-            <div class="flex justify-between items-center bg-slate-800/85 p-3 rounded-2xl border border-slate-700/80 shadow-inner">
+            <div class="flex justify-between items-center bg-slate-800/85 p-2.5 rounded-2xl border border-slate-700/80 shadow-inner">
                 <div>
-                    <h2 class="text-base font-black text-white uppercase tracking-wider leading-tight" id="company-name-display">EMPRESA S.A.</h2>
-                    <p class="text-xs font-bold text-blue-400 mt-0.5" id="project-name-display">Inspección de Campo</p>
+                    <h2 class="text-sm font-black text-white uppercase tracking-wider leading-tight" id="company-name-display">EMPRESA S.A.</h2>
+                    <p class="text-[11px] font-bold text-blue-400" id="project-name-display">Inspección de Campo</p>
                 </div>
                 <div class="text-right">
-                    <span class="text-lg font-mono font-black text-amber-400 block leading-tight" id="hud-time">--:--:--</span>
-                    <span class="text-[11px] font-mono font-bold text-slate-200 block mt-0.5"><span id="hud-date-text">Lunes, 19 de Octubre</span> <span id="hud-timezone" class="text-blue-400 font-black">GMT-6</span></span>
+                    <span class="text-base font-mono font-black text-amber-400 block leading-tight" id="hud-time">--:--:--</span>
+                    <span class="text-[10px] font-mono font-bold text-slate-200 block"><span id="hud-date-text">Lunes, 19 de Octubre</span> <span id="hud-timezone" class="text-blue-400 font-black">GMT-6</span></span>
                 </div>
             </div>
 
             <!-- Dirección y Clima -->
             <div class="grid grid-cols-12 gap-2 text-xs">
-                <div id="box-address" class="col-span-8 flex items-center space-x-2 bg-slate-800/85 px-3 py-2 rounded-xl border border-slate-700/80 truncate shadow">
-                    <i data-lucide="map-pin" class="w-4 h-4 text-emerald-400 shrink-0"></i>
-                    <span id="hud-address" class="truncate font-extrabold text-slate-100">Obteniendo ubicación y dirección...</span>
+                <div id="box-address" class="col-span-8 flex items-center space-x-1.5 bg-slate-800/85 px-3 py-1.5 rounded-xl border border-slate-700/80 truncate shadow">
+                    <i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-400 shrink-0"></i>
+                    <span id="hud-address" class="truncate font-extrabold text-slate-100 text-[11px]">Obteniendo ubicación...</span>
                 </div>
-                <div id="box-weather" class="col-span-4 flex items-center justify-center space-x-1.5 bg-slate-800/85 px-3 py-2 rounded-xl border border-slate-700/80 font-extrabold text-amber-300 shadow">
-                    <i data-lucide="cloud-sun" class="w-4 h-4 text-amber-400 shrink-0"></i>
+                <div id="box-weather" class="col-span-4 flex items-center justify-center space-x-1 bg-slate-800/85 px-3 py-1.5 rounded-xl border border-slate-700/80 font-extrabold text-amber-300 shadow text-[11px]">
+                    <i data-lucide="cloud-sun" class="w-3.5 h-3.5 text-amber-400 shrink-0"></i>
                     <span id="hud-weather">28°C · Soleado</span>
                 </div>
             </div>
 
-            <!-- Coordenadas y Rumbo -->
+            <!-- Coordenadas, Rumbo y Logo Gigante -->
             <div class="grid grid-cols-12 gap-2 items-center">
-                <div id="box-coords" class="col-span-7 bg-slate-800/85 p-2.5 rounded-xl border border-slate-700/80 flex flex-col space-y-1 font-mono text-xs shadow">
-                    <div class="flex items-center space-x-2 text-slate-100 font-bold">
-                        <i data-lucide="crosshair" class="w-4 h-4 text-red-400 shrink-0"></i>
-                        <span id="hud-coords" class="truncate font-black text-xs">Lat: 0.0000, Lon: 0.0000</span>
+                <div class="col-span-9 flex flex-col space-y-1.5">
+                    <div id="box-coords" class="bg-slate-800/85 px-2.5 py-1.5 rounded-xl border border-slate-700/80 flex items-center justify-between font-mono text-[11px] text-slate-100 font-bold shadow">
+                        <span class="truncate" id="hud-coords">Lat: 0.0000, Lon: 0.0000</span>
+                        <span id="hud-altitude" class="text-blue-400 ml-2">Alt: 0m (±5m)</span>
                     </div>
-                    <div id="box-altitude" class="flex items-center justify-between text-slate-200 font-bold pt-1 border-t border-slate-700/80 text-[11px]">
-                        <span class="flex items-center space-x-1"><i data-lucide="mountain" class="w-3.5 h-3.5 text-blue-400"></i><span id="hud-altitude">Alt: 0m</span></span>
-                        <span class="flex items-center space-x-1"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i><span id="hud-accuracy">±5m</span></span>
+
+                    <div id="box-compass" class="bg-slate-800/85 px-2.5 py-1.5 rounded-xl border border-slate-700/80 flex items-center justify-between shadow text-[11px]">
+                        <span class="font-bold text-slate-300">Rumbo:</span>
+                        <span id="hud-heading-cardinal" class="font-black text-amber-400">N (0°)</span>
+                    </div>
+
+                    <!-- Notas compactas -->
+                    <div id="box-notes" class="bg-slate-800/85 px-2.5 py-1.5 rounded-xl border border-slate-700/80 text-[11px] text-slate-200 italic flex items-center space-x-1.5 truncate shadow font-sans">
+                        <i data-lucide="file-text" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+                        <span id="hud-notes" class="truncate font-bold">Revisión técnica de infraestructura</span>
                     </div>
                 </div>
 
-                <div id="box-compass" class="col-span-3 bg-slate-800/85 p-2 rounded-xl border border-slate-700/80 flex items-center justify-between shadow text-xs">
-                    <span class="font-bold text-slate-300">Rumbo:</span>
-                    <span id="hud-heading-cardinal" class="font-black text-amber-400">N (0°)</span>
-                </div>
-
-                <!-- Logo Grande en Pantalla (Esquina Inferior Derecha del Recuadro) -->
-                <div class="col-span-2 flex justify-end">
-                    <div class="w-14 h-14 bg-blue-600 rounded-2xl overflow-hidden flex items-center justify-center font-black text-white text-xl shadow-xl border-2 border-blue-400" id="logo-container">
+                <!-- Logo Gigante a la Derecha -->
+                <div class="col-span-3 flex justify-end items-center">
+                    <div class="w-20 h-20 bg-blue-600 rounded-2xl overflow-hidden flex items-center justify-center font-black text-white text-2xl shadow-2xl border-2 border-blue-400" id="logo-container">
                         <span id="logo-text">EM</span>
                     </div>
                 </div>
-            </div>
-
-            <!-- Notas -->
-            <div id="box-notes" class="bg-slate-800/85 px-3 py-2 rounded-xl border border-slate-700/80 text-xs text-slate-200 italic flex items-center space-x-2 truncate shadow font-sans">
-                <i data-lucide="file-text" class="w-4 h-4 text-slate-400 shrink-0"></i>
-                <span id="hud-notes" class="truncate font-bold">Revisión técnica de infraestructura</span>
             </div>
         </div>
 
@@ -299,8 +295,7 @@
                     currentAccuracy = pos.coords.accuracy || 5.0;
 
                     document.getElementById('hud-coords').innerText = `Lat: ${currentLat.toFixed(4)}, Lon: ${currentLon.toFixed(4)}`;
-                    document.getElementById('hud-altitude').innerText = `Alt: ${Math.round(currentAlt)}m`;
-                    document.getElementById('hud-accuracy').innerText = `±${Math.round(currentAccuracy)}m`;
+                    document.getElementById('hud-altitude').innerText = `Alt: ${Math.round(currentAlt)}m (±${Math.round(currentAccuracy)}m)`;
 
                     if (map && marker) {
                         map.setView([currentLat, currentLon], 17);
@@ -391,7 +386,7 @@
             const boxWidth = canvas.width - (margin * 2);
             const cornerRadius = 30;
 
-            // ================= 2. MINIMAPA SUPERIOR GRANDE EN CANVAS (SIN BARRA NEGRA) =================
+            // ================= 2. MINIMAPA SUPERIOR GRANDE EN CANVAS =================
             const showMap = document.getElementById('toggle-map').checked;
             if (showMap) {
                 const mapSize = 320;
@@ -425,7 +420,6 @@
                         ctx.clip();
                         ctx.drawImage(mapImg, mapX, mapY, mapSize, mapSize);
 
-                        // Marcador central
                         ctx.beginPath();
                         ctx.arc(mapX + mapSize / 2, mapY + mapSize / 2, 11, 0, 2 * Math.PI);
                         ctx.fillStyle = '#3b82f6';
@@ -442,8 +436,8 @@
                 } catch(e) {}
             }
 
-            // ================= 3. RECUADRO INFERIOR EN CANVAS =================
-            const bottomBoxHeight = 350;
+            // ================= 3. RECUADRO INFERIOR COMPACTO EN CANVAS =================
+            const bottomBoxHeight = 280;
             const bottomBoxY = canvas.height - bottomBoxHeight - margin;
 
             ctx.save();
@@ -459,11 +453,11 @@
             ctx.strokeStyle = 'rgba(71, 85, 105, 0.8)';
             ctx.stroke();
 
-            // Empresa y Proyecto (Arriba dentro del recuadro inferior)
+            // Empresa y Proyecto
             ctx.textAlign = 'left';
             ctx.fillStyle = '#FFFFFF';
-            ctx.font = 'bold 36px sans-serif';
-            ctx.fillText(document.getElementById('input-company').value, margin + 40, bottomBoxY + 55);
+            ctx.font = 'bold 30px sans-serif';
+            ctx.fillText(document.getElementById('input-company').value, margin + 35, bottomBoxY + 45);
 
             const now = new Date();
             const timeStr = now.toLocaleTimeString();
@@ -471,61 +465,61 @@
             let dateLetterStr = now.toLocaleDateString('es-ES', options);
             dateLetterStr = dateLetterStr.charAt(0).toUpperCase() + dateLetterStr.slice(1);
 
-            ctx.font = 'bold 28px monospace';
+            ctx.font = 'bold 26px monospace';
             ctx.fillStyle = '#60A5FA';
             ctx.textAlign = 'right';
-            ctx.fillText(timeStr, margin + boxWidth - 40, bottomBoxY + 50);
+            ctx.fillText(timeStr, margin + boxWidth - 35, bottomBoxY + 42);
 
-            ctx.font = 'bold 20px monospace';
+            ctx.font = 'bold 18px monospace';
             ctx.fillStyle = '#CBD5E1';
-            ctx.fillText(`${dateLetterStr} (${currentGMTOffset})`, margin + boxWidth - 40, bottomBoxY + 85);
+            ctx.fillText(`${dateLetterStr} (${currentGMTOffset})`, margin + boxWidth - 35, bottomBoxY + 72);
 
-            let currentY = 135;
+            let currentY = 105;
 
             // Dirección y Clima
             if (document.getElementById('toggle-address').checked) {
                 ctx.textAlign = 'left';
-                ctx.font = 'bold 26px sans-serif';
+                ctx.font = 'bold 22px sans-serif';
                 ctx.fillStyle = '#34D399';
-                ctx.fillText(`📍 ${currentAddress}`, margin + 40, bottomBoxY + currentY);
+                ctx.fillText(`📍 ${currentAddress}`, margin + 35, bottomBoxY + currentY);
             }
             if (document.getElementById('toggle-weather').checked) {
                 ctx.textAlign = 'right';
-                ctx.font = 'bold 24px sans-serif';
+                ctx.font = 'bold 22px sans-serif';
                 ctx.fillStyle = '#FBBF24';
-                ctx.fillText(`28°C · Soleado`, margin + boxWidth - 40, bottomBoxY + currentY);
+                ctx.fillText(`28°C · Soleado`, margin + boxWidth - 35, bottomBoxY + currentY);
             }
-            currentY += 65;
+            currentY += 45;
 
             // Coordenadas y Rumbo
             if (document.getElementById('toggle-coords').checked) {
                 ctx.textAlign = 'left';
-                ctx.font = '24px monospace';
+                ctx.font = '20px monospace';
                 ctx.fillStyle = '#F8FAFC';
-                ctx.fillText(`GPS: ${currentLat.toFixed(5)}, ${currentLon.toFixed(5)}  |  Alt: ${Math.round(currentAlt)}m (±${Math.round(currentAccuracy)}m)`, margin + 40, bottomBoxY + currentY);
-                currentY += 50;
+                ctx.fillText(`GPS: ${currentLat.toFixed(5)}, ${currentLon.toFixed(5)}  |  Alt: ${Math.round(currentAlt)}m (±${Math.round(currentAccuracy)}m)`, margin + 35, bottomBoxY + currentY);
+                currentY += 40;
             }
 
             if (document.getElementById('toggle-compass').checked) {
-                ctx.font = 'bold 26px monospace';
+                ctx.font = 'bold 22px monospace';
                 ctx.fillStyle = '#FBBF24';
-                ctx.fillText(`Rumbo: ${currentCardinal} (${currentHeadingDegrees}°)`, margin + 40, bottomBoxY + currentY);
+                ctx.fillText(`Rumbo: ${currentCardinal} (${currentHeadingDegrees}°)`, margin + 35, bottomBoxY + currentY);
             }
 
             // Nota del Inspector
-            ctx.font = 'italic 22px sans-serif';
+            ctx.font = 'italic 18px sans-serif';
             ctx.fillStyle = '#CBD5E1';
-            ctx.fillText(`Nota: ${document.getElementById('input-notes').value}`, margin + 40, bottomBoxY + bottomBoxHeight - 25);
+            ctx.fillText(`Nota: ${document.getElementById('input-notes').value}`, margin + 35, bottomBoxY + bottomBoxHeight - 20);
 
-            // ================= LOGOTIPO GRANDE EN LA ESQUINA INFERIOR DERECHA =================
-            const logoSize = 100; // Logo grande aprovechando el espacio
-            const logoX = margin + boxWidth - logoSize - 40;
-            const logoY = bottomBoxY + bottomBoxHeight - logoSize - 35;
+            // ================= LOGOTIPO GIGANTE A LA DERECHA =================
+            const logoSize = 130; // Logotipo grande y destacado
+            const logoX = margin + boxWidth - logoSize - 35;
+            const logoY = bottomBoxY + bottomBoxHeight - logoSize - 25;
 
             if (customLogoImage) {
                 ctx.save();
                 ctx.beginPath();
-                if (ctx.roundRect) { ctx.roundRect(logoX, logoY, logoSize, logoSize, 20); }
+                if (ctx.roundRect) { ctx.roundRect(logoX, logoY, logoSize, logoSize, 22); }
                 else { ctx.rect(logoX, logoY, logoSize, logoSize); }
                 ctx.clip();
                 ctx.drawImage(customLogoImage, logoX, logoY, logoSize, logoSize);
@@ -536,7 +530,7 @@
             } else {
                 ctx.save();
                 ctx.beginPath();
-                if (ctx.roundRect) { ctx.roundRect(logoX, logoY, logoSize, logoSize, 20); }
+                if (ctx.roundRect) { ctx.roundRect(logoX, logoY, logoSize, logoSize, 22); }
                 else { ctx.rect(logoX, logoY, logoSize, logoSize); }
                 ctx.fillStyle = '#2563EB';
                 ctx.fill();
@@ -544,7 +538,7 @@
                 ctx.strokeStyle = '#60A5FA';
                 ctx.stroke();
                 ctx.fillStyle = '#FFFFFF';
-                ctx.font = 'bold 42px sans-serif';
+                ctx.font = 'bold 54px sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 const compText = document.getElementById('input-company').value.substring(0, 2).toUpperCase();
