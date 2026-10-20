@@ -396,7 +396,7 @@
 
             const showMap = document.getElementById('toggle-map').checked;
             const showCompass = document.getElementById('toggle-compass').checked;
-            const boxHeight = 455;
+            const boxHeight = 460;
             const boxY = canvas.height - boxHeight - margin;
             const cornerRadius = 35;
 
@@ -453,13 +453,13 @@
                 currentY += 65;
             }
 
-            // 3. Distribución en 2 Columnas Sincronizadas
+            // 3. Distribución en 2 Columnas Exactas y Sincronizadas
             let leftColX = boxX + 45;
-            let rightColX = boxX + 265; // Columna derecha perfectamente alineada al mismo nivel superior del mapa
+            let rightColX = boxX + 270; 
             let contentStartY = currentY;
 
             if (showMap) {
-                const mapSize = 190;
+                const mapSize = 195;
                 const mapY = boxY + contentStartY;
 
                 try {
@@ -506,25 +506,25 @@
                 } catch(e) {}
             }
 
-            // Columna Derecha (Alineada exactamente a la misma altura inicial del mapa)
-            let colY = contentStartY + 25;
+            // Columna Derecha con espaciado vertical milimétrico y simétrico
+            let colY = contentStartY + 15;
             if (document.getElementById('toggle-coords').checked) {
                 ctx.textAlign = 'left';
                 ctx.font = '22px monospace';
                 ctx.fillStyle = '#F8FAFC';
                 ctx.fillText(`GPS: ${currentLat.toFixed(5)}, ${currentLon.toFixed(5)}`, rightColX, boxY + colY);
-                colY += 38;
+                colY += 45;
                 ctx.fillText(`Altitud: ${Math.round(currentAlt)}m  |  ±${Math.round(currentAccuracy)}m`, rightColX, boxY + colY);
-                colY += 48;
+                colY += 55;
             }
 
             if (showCompass) {
                 ctx.font = 'bold 24px monospace';
                 ctx.fillStyle = '#FBBF24';
                 ctx.fillText(`Rumbo: ${currentCardinal} (${currentHeadingDegrees}°)`, rightColX, boxY + colY);
-                colY += 45;
+                colY += 50;
 
-                // Rosa Náutica pequeña simétrica
+                // Rosa Náutica pequeña perfectamente alineada
                 const compX = rightColX + 35;
                 const compY = boxY + colY + 12;
                 const radius = 24;
