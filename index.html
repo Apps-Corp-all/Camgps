@@ -35,14 +35,14 @@
         <canvas id="snapshot-canvas" class="hidden"></canvas>
 
         <!-- Minimapa Arriba a la Izquierda -->
-        <div id="box-map" class="absolute top-4 left-4 w-52 h-52 rounded-2xl overflow-hidden border-2 border-blue-500 shadow-2xl bg-slate-950 pointer-events-none z-10">
+        <div id="box-map" class="absolute top-4 left-4 w-44 h-44 rounded-2xl overflow-hidden border-2 border-blue-500 shadow-2xl bg-slate-950 pointer-events-none z-10">
             <div id="mini-map" class="w-full h-full"></div>
         </div>
 
         <!-- Rosa Náutica Arriba a la Derecha -->
-        <div id="box-compass-widget" class="absolute top-4 right-4 w-52 h-52 rounded-2xl overflow-hidden border-2 border-amber-500 shadow-2xl bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center p-3 pointer-events-none z-10">
-            <div class="relative w-32 h-32 flex items-center justify-center">
-                <svg id="compass-rose" class="compass-rose w-32 h-32" viewBox="0 0 100 100">
+        <div id="box-compass-widget" class="absolute top-4 right-4 w-44 h-44 rounded-2xl overflow-hidden border-2 border-amber-500 shadow-2xl bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center p-3 pointer-events-none z-10">
+            <div class="relative w-28 h-28 flex items-center justify-center">
+                <svg id="compass-rose" class="compass-rose w-28 h-28" viewBox="0 0 100 100">
                     <circle cx="50" cy="50" r="46" fill="none" stroke="#64748B" stroke-width="4" />
                     <text x="50" y="18" fill="#EF4444" font-size="18" font-weight="bold" text-anchor="middle">N</text>
                     <text x="50" y="92" fill="#94A3B8" font-size="14" font-weight="bold" text-anchor="middle">S</text>
@@ -54,55 +54,53 @@
                     <polygon points="50,78 44,50 50,55" fill="#64748B" />
                 </svg>
             </div>
-            <span id="hud-heading-cardinal" class="text-sm font-black text-amber-400 mt-2">N (0°)</span>
+            <span id="hud-heading-cardinal" class="text-xs font-black text-amber-400 mt-1">N (0°)</span>
         </div>
 
-        <!-- RECUADRO INFERIOR PERFECTAMENTE ORGANIZADO -->
-        <div class="absolute inset-x-3 bottom-3 bg-slate-900/85 backdrop-blur-xl border-2 border-slate-700/80 rounded-3xl p-4 shadow-[0_15px_40px_rgba(0,0,0,0.85)] flex flex-col space-y-2.5 pointer-events-none z-10">
+        <!-- RECUADRO INFERIOR (Diseño Sólido y Ordenado) -->
+        <div class="absolute inset-x-3 bottom-3 bg-slate-900/90 backdrop-blur-xl border-2 border-slate-700/80 rounded-3xl p-3.5 shadow-[0_15px_40px_rgba(0,0,0,0.85)] flex flex-col space-y-2 pointer-events-none z-10">
             
-            <!-- Fila 1: Empresa y Hora/Fecha -->
-            <div class="flex justify-between items-center bg-slate-800/85 px-3 py-2.5 rounded-2xl border border-slate-700/80 shadow-inner">
+            <!-- Fila Superior: Empresa y Hora -->
+            <div class="flex justify-between items-center bg-slate-800/90 px-3 py-2 rounded-xl border border-slate-700">
                 <div>
                     <h2 class="text-sm font-black text-white uppercase tracking-wider leading-tight" id="company-name-display">EMPRESA S.A.</h2>
                     <p class="text-[11px] font-bold text-blue-400" id="project-name-display">Inspección de Campo</p>
                 </div>
                 <div class="text-right">
-                    <span class="text-base font-mono font-black text-amber-400 block leading-tight" id="hud-time">--:--:--</span>
-                    <span class="text-[10px] font-mono font-bold text-slate-200 block"><span id="hud-date-text">Lunes, 19 de Octubre</span> <span id="hud-timezone" class="text-blue-400 font-black">GMT-6</span></span>
+                    <span class="text-sm font-mono font-black text-amber-400 block leading-tight" id="hud-time">--:--:--</span>
+                    <span class="text-[10px] font-mono font-bold text-slate-300 block"><span id="hud-date-text">Lunes, 19 de Octubre</span> <span id="hud-timezone" class="text-blue-400 font-black">GMT-6</span></span>
                 </div>
             </div>
 
-            <!-- Fila 2: Dirección y Clima -->
-            <div class="grid grid-cols-12 gap-2 text-xs">
-                <div id="box-address" class="col-span-8 flex items-center space-x-1.5 bg-slate-800/85 px-3 py-2 rounded-xl border border-slate-700/80 truncate shadow">
+            <!-- Fila Central: Dirección y Clima -->
+            <div class="flex space-x-2 text-xs">
+                <div id="box-address" class="flex-1 flex items-center space-x-2 bg-slate-800/90 px-3 py-1.5 rounded-xl border border-slate-700 truncate shadow">
                     <i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-400 shrink-0"></i>
                     <span id="hud-address" class="truncate font-extrabold text-slate-100 text-[11px]">Obteniendo ubicación...</span>
                 </div>
-                <div id="box-weather" class="col-span-4 flex items-center justify-center space-x-1 bg-slate-800/85 px-3 py-2 rounded-xl border border-slate-700/80 font-extrabold text-amber-300 shadow text-[11px]">
+                <div id="box-weather" class="w-32 flex items-center justify-center space-x-1 bg-slate-800/90 px-2 py-1.5 rounded-xl border border-slate-700 font-extrabold text-amber-300 shadow text-[11px] shrink-0">
                     <i data-lucide="cloud-sun" class="w-3.5 h-3.5 text-amber-400 shrink-0"></i>
                     <span id="hud-weather">28°C · Soleado</span>
                 </div>
             </div>
 
-            <!-- Fila 3: Coordenadas, Nota y Logo Gigante a la Derecha -->
-            <div class="grid grid-cols-12 gap-2 items-end">
-                <div class="col-span-9 flex flex-col space-y-2">
-                    <div id="box-coords" class="bg-slate-800/85 px-3 py-2 rounded-xl border border-slate-700/80 flex items-center justify-between font-mono text-[11px] text-slate-100 font-bold shadow">
+            <!-- Fila Inferior: Coordenadas, Notas y Logo Gigante a la Derecha -->
+            <div class="flex items-center space-x-2">
+                <div class="flex-1 flex flex-col space-y-1.5">
+                    <div id="box-coords" class="bg-slate-800/90 px-3 py-1.5 rounded-xl border border-slate-700 flex items-center justify-between font-mono text-[11px] text-slate-100 font-bold shadow">
                         <span class="truncate" id="hud-coords">Lat: 0.0000, Lon: 0.0000</span>
                         <span id="hud-altitude" class="text-blue-400 ml-2">Alt: 0m (±5m)</span>
                     </div>
 
-                    <div id="box-notes" class="bg-slate-800/85 px-3 py-2 rounded-xl border border-slate-700/80 text-[11px] text-slate-200 italic flex items-center space-x-1.5 truncate shadow font-sans">
+                    <div id="box-notes" class="bg-slate-800/90 px-3 py-1.5 rounded-xl border border-slate-700 text-[11px] text-slate-200 italic flex items-center space-x-2 truncate shadow font-sans">
                         <i data-lucide="file-text" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
                         <span id="hud-notes" class="truncate font-bold">Revisión técnica de infraestructura</span>
                     </div>
                 </div>
 
-                <!-- Logo Gigante (Alineado perfectamente a la derecha) -->
-                <div class="col-span-3 flex justify-end">
-                    <div class="w-20 h-20 bg-blue-600 rounded-2xl overflow-hidden flex items-center justify-center font-black text-white text-2xl shadow-2xl border-2 border-blue-400" id="logo-container">
-                        <span id="logo-text">EM</span>
-                    </div>
+                <!-- Logo Gigante a la Derecha -->
+                <div class="w-20 h-20 bg-blue-600 rounded-2xl overflow-hidden flex items-center justify-center font-black text-white text-2xl shadow-2xl border-2 border-blue-400 shrink-0" id="logo-container">
+                    <span id="logo-text">EM</span>
                 </div>
             </div>
         </div>
@@ -411,7 +409,7 @@
             // ================= 2. MINIMAPA SUPERIOR IZQUIERDA EN CANVAS =================
             const showMap = document.getElementById('toggle-map').checked;
             if (showMap) {
-                const mapSize = 320;
+                const mapSize = 280;
                 const mapX = margin;
                 const mapY = margin;
 
@@ -443,7 +441,7 @@
                         ctx.drawImage(mapImg, mapX, mapY, mapSize, mapSize);
 
                         ctx.beginPath();
-                        ctx.arc(mapX + mapSize / 2, mapY + mapSize / 2, 11, 0, 2 * Math.PI);
+                        ctx.arc(mapX + mapSize / 2, mapY + mapSize / 2, 10, 0, 2 * Math.PI);
                         ctx.fillStyle = '#3b82f6';
                         ctx.fill();
                         ctx.lineWidth = 3;
@@ -461,7 +459,7 @@
             // ================= 3. ROSA NÁUTICA SUPERIOR DERECHA EN CANVAS =================
             const showCompass = document.getElementById('toggle-compass').checked;
             if (showCompass) {
-                const compSize = 320;
+                const compSize = 280;
                 const compX = canvas.width - margin - compSize;
                 const compY = margin;
 
@@ -480,8 +478,8 @@
                 ctx.clip();
 
                 const cx = compX + compSize / 2;
-                const cy = compY + compSize / 2 - 20;
-                const radius = 95;
+                const cy = compY + compSize / 2 - 15;
+                const radius = 80;
 
                 ctx.beginPath();
                 ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
@@ -494,38 +492,38 @@
                 ctx.rotate((currentHeadingDegrees * Math.PI) / 180);
 
                 ctx.beginPath();
-                ctx.moveTo(0, -75);
-                ctx.lineTo(16, 0);
-                ctx.lineTo(0, 45);
+                ctx.moveTo(0, -65);
+                ctx.lineTo(14, 0);
+                ctx.lineTo(0, 35);
                 ctx.fillStyle = '#EF4444';
                 ctx.fill();
 
                 ctx.beginPath();
-                ctx.moveTo(0, 75);
-                ctx.lineTo(-16, 0);
-                ctx.lineTo(0, 45);
+                ctx.moveTo(0, 65);
+                ctx.lineTo(-14, 0);
+                ctx.lineTo(0, 35);
                 ctx.fillStyle = '#94A3B8';
                 ctx.fill();
                 ctx.restore();
 
-                ctx.font = 'bold 28px sans-serif';
+                ctx.font = 'bold 26px sans-serif';
                 ctx.fillStyle = '#EF4444';
                 ctx.textAlign = 'center';
-                ctx.fillText('N', cx, cy - radius + 25);
+                ctx.fillText('N', cx, cy - radius + 22);
                 ctx.fillStyle = '#94A3B8';
                 ctx.fillText('S', cx, cy + radius - 8);
-                ctx.fillText('E', cx + radius - 15, cy + 10);
-                ctx.fillText('O', cx - radius + 18, cy + 10);
+                ctx.fillText('E', cx + radius - 15, cy + 8);
+                ctx.fillText('O', cx - radius + 16, cy + 8);
 
-                ctx.font = 'bold 26px sans-serif';
+                ctx.font = 'bold 24px sans-serif';
                 ctx.fillStyle = '#FBBF24';
                 ctx.textAlign = 'center';
-                ctx.fillText(`${currentCardinal} (${currentHeadingDegrees}°)`, cx, compY + compSize - 35);
+                ctx.fillText(`${currentCardinal} (${currentHeadingDegrees}°)`, cx, compY + compSize - 30);
 
                 ctx.restore();
             }
 
-            // ================= 4. RECUADRO INFERIOR EN CANVAS (SIMÉTRICO Y LIMPIO) =================
+            // ================= 4. RECUADRO INFERIOR EN CANVAS =================
             const bottomBoxHeight = 310;
             const bottomBoxY = canvas.height - bottomBoxHeight - margin;
 
@@ -536,7 +534,7 @@
             } else {
                 ctx.rect(margin, bottomBoxY, boxWidth, bottomBoxHeight);
             }
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
             ctx.fill();
             ctx.lineWidth = 3;
             ctx.strokeStyle = 'rgba(71, 85, 105, 0.8)';
@@ -545,8 +543,8 @@
             // Empresa y Proyecto
             ctx.textAlign = 'left';
             ctx.fillStyle = '#FFFFFF';
-            ctx.font = 'bold 30px sans-serif';
-            ctx.fillText(document.getElementById('input-company').value, margin + 35, bottomBoxY + 45);
+            ctx.font = 'bold 32px sans-serif';
+            ctx.fillText(document.getElementById('input-company').value, margin + 40, bottomBoxY + 50);
 
             const now = new Date();
             const timeStr = now.toLocaleTimeString();
@@ -554,50 +552,50 @@
             let dateLetterStr = now.toLocaleDateString('es-ES', options);
             dateLetterStr = dateLetterStr.charAt(0).toUpperCase() + dateLetterStr.slice(1);
 
-            ctx.font = 'bold 26px monospace';
+            ctx.font = 'bold 28px monospace';
             ctx.fillStyle = '#60A5FA';
             ctx.textAlign = 'right';
-            ctx.fillText(timeStr, margin + boxWidth - 35, bottomBoxY + 42);
+            ctx.fillText(timeStr, margin + boxWidth - 40, bottomBoxY + 45);
 
-            ctx.font = 'bold 18px monospace';
+            ctx.font = 'bold 20px monospace';
             ctx.fillStyle = '#CBD5E1';
-            ctx.fillText(`${dateLetterStr} (${currentGMTOffset})`, margin + boxWidth - 35, bottomBoxY + 72);
+            ctx.fillText(`${dateLetterStr} (${currentGMTOffset})`, margin + boxWidth - 40, bottomBoxY + 78);
 
-            let currentY = 105;
+            let currentY = 120;
 
             // Dirección
             if (document.getElementById('toggle-address').checked) {
                 ctx.textAlign = 'left';
-                ctx.font = 'bold 22px sans-serif';
+                ctx.font = 'bold 24px sans-serif';
                 ctx.fillStyle = '#34D399';
-                ctx.fillText(`📍 ${currentAddress}`, margin + 35, bottomBoxY + currentY);
+                ctx.fillText(`📍 ${currentAddress}`, margin + 40, bottomBoxY + currentY);
             }
             if (document.getElementById('toggle-weather').checked) {
                 ctx.textAlign = 'right';
-                ctx.font = 'bold 22px sans-serif';
+                ctx.font = 'bold 24px sans-serif';
                 ctx.fillStyle = '#FBBF24';
-                ctx.fillText(`28°C · Soleado`, margin + boxWidth - 35, bottomBoxY + currentY);
+                ctx.fillText(`28°C · Soleado`, margin + boxWidth - 40, bottomBoxY + currentY);
             }
-            currentY += 45;
+            currentY += 50;
 
             // Coordenadas
             if (document.getElementById('toggle-coords').checked) {
                 ctx.textAlign = 'left';
-                ctx.font = '20px monospace';
+                ctx.font = '22px monospace';
                 ctx.fillStyle = '#F8FAFC';
-                ctx.fillText(`GPS: ${currentLat.toFixed(5)}, ${currentLon.toFixed(5)}  |  Alt: ${Math.round(currentAlt)}m (±${Math.round(currentAccuracy)}m)`, margin + 35, bottomBoxY + currentY);
+                ctx.fillText(`GPS: ${currentLat.toFixed(5)}, ${currentLon.toFixed(5)}  |  Alt: ${Math.round(currentAlt)}m (±${Math.round(currentAccuracy)}m)`, margin + 40, bottomBoxY + currentY);
                 currentY += 45;
             }
 
             // Nota del Inspector
-            ctx.font = 'italic 18px sans-serif';
+            ctx.font = 'italic 20px sans-serif';
             ctx.fillStyle = '#CBD5E1';
-            ctx.fillText(`Nota: ${document.getElementById('input-notes').value}`, margin + 35, bottomBoxY + bottomBoxHeight - 20);
+            ctx.fillText(`Nota: ${document.getElementById('input-notes').value}`, margin + 40, bottomBoxY + bottomBoxHeight - 25);
 
             // ================= LOGOTIPO GIGANTE A LA DERECHA =================
             const logoSize = 130;
-            const logoX = margin + boxWidth - logoSize - 35;
-            const logoY = bottomBoxY + bottomBoxHeight - logoSize - 25;
+            const logoX = margin + boxWidth - logoSize - 40;
+            const logoY = bottomBoxY + bottomBoxHeight - logoSize - 30;
 
             if (customLogoImage) {
                 ctx.save();
