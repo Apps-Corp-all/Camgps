@@ -34,8 +34,8 @@
         <video id="camera-feed" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover"></video>
         <canvas id="snapshot-canvas" class="hidden"></canvas>
 
-        <!-- Minimapa Arriba (Flotante sin barra negra) -->
-        <div id="box-map" class="absolute top-4 left-4 w-32 h-32 rounded-2xl overflow-hidden border-2 border-blue-500 shadow-2xl bg-slate-950 pointer-events-none z-10">
+        <!-- Minimapa Arriba (Más grande y flotante sin barra negra) -->
+        <div id="box-map" class="absolute top-4 left-4 w-44 h-44 rounded-2xl overflow-hidden border-2 border-blue-500 shadow-2xl bg-slate-950 pointer-events-none z-10">
             <div id="mini-map" class="w-full h-full"></div>
         </div>
 
@@ -328,7 +328,7 @@
                         currentHeadingDegrees = Math.round(e.alpha);
                         const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
                         currentCardinal = dirs[Math.round(currentHeadingDegrees / 45) % 8];
-                        document.getElementById('hud-heading-cardinal',).innerText = `${currentCardinal} (${currentHeadingDegrees}°)`;
+                        document.getElementById('hud-heading-cardinal').innerText = `${currentCardinal} (${currentHeadingDegrees}°)`;
                     }
                 });
             }
@@ -366,10 +366,10 @@
             const boxWidth = canvas.width - (margin * 2);
             const cornerRadius = 30;
 
-            // ================= 2. MINIMAPA SUPERIOR EN CANVAS (SIN BARRA NEGRA) =================
+            // ================= 2. MINIMAPA SUPERIOR GRANDE EN CANVAS (SIN BARRA NEGRA) =================
             const showMap = document.getElementById('toggle-map').checked;
             if (showMap) {
-                const mapSize = 200;
+                const mapSize = 260; // Minimapa más grande
                 const mapX = margin;
                 const mapY = margin;
 
@@ -393,7 +393,7 @@
                         ctx.save();
                         ctx.beginPath();
                         if (ctx.roundRect) {
-                            ctx.roundRect(mapX, mapY, mapSize, mapSize, 20);
+                            ctx.roundRect(mapX, mapY, mapSize, mapSize, 22);
                         } else {
                             ctx.rect(mapX, mapY, mapSize, mapSize);
                         }
@@ -402,7 +402,7 @@
 
                         // Marcador central
                         ctx.beginPath();
-                        ctx.arc(mapX + mapSize / 2, mapY + mapSize / 2, 9, 0, 2 * Math.PI);
+                        ctx.arc(mapX + mapSize / 2, mapY + mapSize / 2, 10, 0, 2 * Math.PI);
                         ctx.fillStyle = '#3b82f6';
                         ctx.fill();
                         ctx.lineWidth = 3;
