@@ -34,7 +34,7 @@
         <video id="camera-feed" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover"></video>
         <canvas id="snapshot-canvas" class="hidden"></canvas>
 
-        <!-- PANEL HUD AMPLIADO CON MINIMAPA GRANDE Y LETRAS GIGANTES -->
+        <!-- PANEL HUD DEFINITIVO (Minimapa Grande, Coordenadas y Brújula Perfecta) -->
         <div class="absolute inset-x-2.5 bottom-2.5 bg-slate-900/96 backdrop-blur-xl border-2 border-slate-700/90 rounded-3xl p-4 shadow-[0_15px_40px_rgba(0,0,0,0.85)] flex flex-col space-y-3 pointer-events-none z-10">
             
             <!-- SECCIÓN 1: Empresa + Fecha/Hora -->
@@ -60,7 +60,7 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 2: Dirección y Clima (Letras Grandes) -->
+            <!-- SECCIÓN 2: Dirección y Clima -->
             <div class="grid grid-cols-12 gap-2.5 text-sm">
                 <div id="box-address" class="col-span-8 flex items-center space-x-2.5 bg-slate-800/90 px-3.5 py-2.5 rounded-2xl border border-slate-700 truncate shadow">
                     <i data-lucide="map-pin" class="w-5 h-5 text-emerald-400 shrink-0"></i>
@@ -72,15 +72,15 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 3: Minimapa GRANDE (5 columnas) + Datos (7 columnas con letras gigantes) -->
+            <!-- SECCIÓN 3: Minimapa GRANDE (5 col) + Datos y Brújula Grande (7 col) -->
             <div class="grid grid-cols-12 gap-3 items-center">
                 
-                <!-- Minimapa Satelital Grande y Cuadrado -->
+                <!-- Minimapa Satelital Grande -->
                 <div id="box-map" class="col-span-5 relative aspect-square rounded-2xl overflow-hidden border-2 border-blue-500 shadow-2xl bg-slate-950">
                     <div id="mini-map" class="w-full h-full"></div>
                 </div>
 
-                <!-- Bloque Derecho: Coordenadas, Altitud, Brújula y Notas en Letras Grandes -->
+                <!-- Bloque Derecho: Coordenadas, Brújula y Notas -->
                 <div class="col-span-7 flex flex-col space-y-2.5">
                     
                     <!-- Coordenadas y Altitud -->
@@ -95,7 +95,7 @@
                         </div>
                     </div>
 
-                    <!-- Rosa Náutica y Rumbo Grande -->
+                    <!-- Rosa Náutica Grande -->
                     <div id="box-compass" class="bg-slate-800/90 p-2.5 rounded-2xl border border-slate-700 flex items-center justify-around shadow">
                         <div class="relative w-12 h-12 flex items-center justify-center shrink-0">
                             <svg id="compass-rose" class="compass-rose w-12 h-12" viewBox="0 0 100 100">
@@ -117,7 +117,7 @@
                         </div>
                     </div>
 
-                    <!-- Notas del Inspector -->
+                    <!-- Notas -->
                     <div id="box-notes" class="bg-slate-800/90 px-3 py-2 rounded-2xl border border-slate-700 text-xs text-slate-200 italic flex items-center space-x-2 truncate shadow font-sans">
                         <i data-lucide="file-text" class="w-4 h-4 text-slate-400 shrink-0"></i>
                         <span id="hud-notes" class="truncate font-bold">Revisión técnica de infraestructura</span>
@@ -272,7 +272,7 @@
 
         function updateClock() {
             const now = new Date();
-            document.getElementById('hud-time').innerHTML = `<i data-lucide="clock" class="w-4 h-4 text-amber-400 mr-1"></i>${now.toLocaleTimeString()}`;
+            document.getElementById('hud-time').innerHTML = `<i data-lucide="clock" class="w-5 h-5 text-amber-400 mr-1.5"></i>${now.toLocaleTimeString()}`;
             document.getElementById('hud-date').innerText = now.toLocaleDateString();
             lucide.createIcons();
         }
@@ -395,7 +395,7 @@
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             const margin = 35;
-            const boxHeight = 280;
+            const boxHeight = 290;
             const boxWidth = canvas.width - (margin * 2);
             const boxX = margin;
             const boxY = canvas.height - boxHeight - margin;
@@ -444,6 +444,61 @@
                 ctx.fillText(`Rumbo: ${currentCardinal} (${currentHeadingDegrees}°)`, boxX + boxWidth - 40, boxY + currentY);
             }
             currentY += 50;
+
+            // Dibujar la Brújula de forma explícita en la foto capturada
+            if (document.getElementById('toggle-compass').checked) {
+                const compassX = boxX + 60;
+                const compassY = boxY + currentY + 30;
+                const radius = 35;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(compassX, compassY, radius, 0, 2 * Math.PI);
+                ctx.fillStyle = '#1E293B';
+                ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#475569';
+                ctx.stroke();
+
+                // Puntos cardinales en la foto
+                ctx.fillStyle = '#EF4444';
+                ctx.font = 'bold 16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('N', compassX, compassY - radius + 14);
+
+                ctx.fillStyle = '#94A3B8';
+                ctx.font = '14px sans-serif';
+                ctx.fillText('S', compassX, compassY + radius - 4);
+                ctx.fillText('E', compassX + radius - 10, compassY + 5);
+                ctx.fillText('O', compassX - radius + 10, compassY + 5);
+
+                // Rotación de la aguja según el rumbo actual
+                ctx.translate(compassX, compassY);
+                ctx.rotate((currentHeadingDegrees * Math.PI) / 180);
+
+                ctx.beginPath();
+                ctx.moveTo(0, -22);
+                ctx.lineTo(6, 0);
+                ctx.lineTo(0, 15);
+                ctx.fillStyle = '#EF4444';
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.moveTo(0, 22);
+                ctx.lineTo(-6, 0);
+                ctx.lineTo(0, 15);
+                ctx.fillStyle = '#94A3B8';
+                ctx.fill();
+
+                ctx.restore();
+
+                // Texto descriptivo al lado de la brújula dibujada
+                ctx.textAlign = 'left';
+                ctx.font = 'bold 24px monospace';
+                ctx.fillStyle = '#FBBF24';
+                ctx.fillText(`Brújula: ${currentCardinal} (${currentHeadingDegrees}°)`, compassX + 60, compassY + 8);
+                currentY += 80;
+            }
 
             ctx.textAlign = 'left';
             ctx.font = 'italic 22px sans-serif';
