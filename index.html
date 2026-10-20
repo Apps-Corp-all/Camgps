@@ -34,12 +34,12 @@
         <video id="camera-feed" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover"></video>
         <canvas id="snapshot-canvas" class="hidden"></canvas>
 
-        <!-- PANEL HUD EN PANTALLA: 2 RECUADROS INDEPENDIENTES -->
-        <div class="absolute inset-x-3 top-3 flex flex-col space-y-2 pointer-events-none z-10">
-            <!-- RECUADRO SUPERIOR: Empresa, Fecha en Letras, Hora, Dirección y Clima -->
-            <div class="bg-slate-900/85 backdrop-blur-xl border-2 border-slate-700/80 rounded-3xl p-4 shadow-xl flex flex-col space-y-3">
-                <div class="flex justify-between items-center bg-slate-800/85 p-3.5 rounded-2xl border border-slate-700/80 shadow-inner">
-                    <div class="flex items-center space-x-3.5">
+        <!-- PANEL HUD EN PANTALLA: 2 RECUADROS -->
+        <div class="absolute inset-x-3 top-3 pointer-events-none z-10">
+            <!-- RECUADRO SUPERIOR: Logo, Empresa, Minimapa y Fecha en Letras -->
+            <div class="bg-slate-900/85 backdrop-blur-xl border-2 border-slate-700/80 rounded-3xl p-3 shadow-xl flex flex-col space-y-2.5">
+                <div class="flex justify-between items-center bg-slate-800/85 p-3 rounded-2xl border border-slate-700/80 shadow-inner">
+                    <div class="flex items-center space-x-3">
                         <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center font-black text-white text-xl shadow-lg border border-blue-400/80" id="logo-container">
                             EM
                         </div>
@@ -49,63 +49,48 @@
                         </div>
                     </div>
                     <div class="text-right">
-                        <span class="text-lg font-mono font-black text-amber-400 block leading-tight" id="hud-time">--:--:--</span>
-                        <span class="text-[11px] font-mono font-bold text-slate-200 block mt-0.5"><span id="hud-date-text">Lunes, 19 de Octubre</span> <span id="hud-timezone" class="text-blue-400 font-black">GMT-6</span></span>
+                        <span class="text-base font-mono font-black text-amber-400 block leading-tight" id="hud-time">--:--:--</span>
+                        <span class="text-[10px] font-mono font-bold text-slate-200 block mt-0.5"><span id="hud-date-text">Lunes, 19 de Octubre</span> <span id="hud-timezone" class="text-blue-400 font-black">GMT-6</span></span>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-12 gap-2 text-xs">
-                    <div id="box-address" class="col-span-8 flex items-center space-x-2 bg-slate-800/85 px-3 py-2 rounded-xl border border-slate-700/80 truncate shadow">
-                        <i data-lucide="map-pin" class="w-4 h-4 text-emerald-400 shrink-0"></i>
-                        <span id="hud-address" class="truncate font-extrabold text-slate-100">Obteniendo ubicación y dirección...</span>
+                <!-- Minimapa y Datos Superiores -->
+                <div class="grid grid-cols-12 gap-2.5 items-center">
+                    <div id="box-map" class="col-span-4 relative aspect-square rounded-xl overflow-hidden border-2 border-blue-500/80 shadow-xl bg-slate-950">
+                        <div id="mini-map" class="w-full h-full"></div>
                     </div>
-                    <div id="box-weather" class="col-span-4 flex items-center justify-center space-x-1.5 bg-slate-800/85 px-3 py-2 rounded-xl border border-slate-700/80 font-extrabold text-amber-300 shadow">
-                        <i data-lucide="cloud-sun" class="w-4 h-4 text-amber-400 shrink-0"></i>
-                        <span id="hud-weather">28°C · Soleado</span>
+                    <div class="col-span-8 flex flex-col space-y-2">
+                        <div id="box-address" class="flex items-center space-x-2 bg-slate-800/85 px-3 py-2 rounded-xl border border-slate-700/80 truncate shadow text-xs">
+                            <i data-lucide="map-pin" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+                            <span id="hud-address" class="truncate font-extrabold text-slate-100">Ubicación...</span>
+                        </div>
+                        <div id="box-weather" class="flex items-center justify-center space-x-1.5 bg-slate-800/85 px-3 py-2 rounded-xl border border-slate-700/80 font-extrabold text-amber-300 shadow text-xs">
+                            <i data-lucide="cloud-sun" class="w-4 h-4 text-amber-400 shrink-0"></i>
+                            <span id="hud-weather">28°C · Soleado</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- RECUADRO INFERIOR: Minimapa, Coordenadas, Rumbo y Notas -->
-        <div class="absolute inset-x-3 bottom-3 bg-slate-900/85 backdrop-blur-xl border-2 border-slate-700/80 rounded-3xl p-4 shadow-[0_15px_40px_rgba(0,0,0,0.85)] flex flex-col space-y-3 pointer-events-none z-10">
-            <div class="grid grid-cols-12 gap-3 items-center">
-                <!-- Minimapa Satelital -->
-                <div id="box-map" class="col-span-4 relative aspect-square rounded-2xl overflow-hidden border-2 border-blue-500/80 shadow-2xl bg-slate-950">
-                    <div id="mini-map" class="w-full h-full"></div>
+        <!-- RECUADRO INFERIOR: Coordenadas, Rumbo y Notas -->
+        <div class="absolute inset-x-3 bottom-3 bg-slate-900/85 backdrop-blur-xl border-2 border-slate-700/80 rounded-3xl p-3.5 shadow-[0_15px_40px_rgba(0,0,0,0.85)] flex flex-col space-y-2.5 pointer-events-none z-10">
+            <div id="box-coords" class="bg-slate-800/85 p-2.5 rounded-xl border border-slate-700/80 flex flex-col space-y-1 font-mono text-xs shadow">
+                <div class="flex items-center space-x-2 text-slate-100 font-bold">
+                    <i data-lucide="crosshair" class="w-4 h-4 text-red-400 shrink-0"></i>
+                    <span id="hud-coords" class="truncate font-black text-xs">Lat: 0.0000, Lon: 0.0000</span>
                 </div>
-
-                <!-- Bloque de Datos -->
-                <div class="col-span-8 flex flex-col space-y-2.5">
-                    <div id="box-coords" class="bg-slate-800/85 p-2.5 rounded-xl border border-slate-700/80 flex flex-col space-y-1 font-mono text-xs shadow">
-                        <div class="flex items-center space-x-2 text-slate-100 font-bold">
-                            <i data-lucide="crosshair" class="w-4 h-4 text-red-400 shrink-0"></i>
-                            <span id="hud-coords" class="truncate font-black text-xs">Lat: 0.0000, Lon: 0.0000</span>
-                        </div>
-                        <div id="box-altitude" class="flex items-center justify-between text-slate-200 font-bold pt-1 border-t border-slate-700/80 text-[11px]">
-                            <span class="flex items-center space-x-1"><i data-lucide="mountain" class="w-3.5 h-3.5 text-blue-400"></i><span id="hud-altitude">Alt: 0m</span></span>
-                            <span class="flex items-center space-x-1"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i><span id="hud-accuracy">±5m</span></span>
-                        </div>
-                    </div>
-
-                    <div id="box-compass" class="bg-slate-800/85 p-2.5 rounded-xl border border-slate-700/80 flex items-center justify-between shadow">
-                        <div class="text-left">
-                            <span class="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Rumbo Satelital</span>
-                            <span id="hud-heading-cardinal" class="text-sm font-black text-amber-400">N (0°)</span>
-                        </div>
-                        <div class="relative w-8 h-8 flex items-center justify-center shrink-0">
-                            <svg id="compass-rose" class="compass-rose w-8 h-8" viewBox="0 0 100 100">
-                                <circle cx="50" cy="50" r="46" fill="none" stroke="#64748B" stroke-width="4" />
-                                <text x="50" y="20" fill="#EF4444" font-size="20" font-weight="bold" text-anchor="middle">N</text>
-                                <polygon points="50,25 56,50 50,45" fill="#EF4444" />
-                                <polygon points="50,25 44,50 50,45" fill="#B91C1C" />
-                            </svg>
-                        </div>
-                    </div>
+                <div id="box-altitude" class="flex items-center justify-between text-slate-200 font-bold pt-1 border-t border-slate-700/80 text-[11px]">
+                    <span class="flex items-center space-x-1"><i data-lucide="mountain" class="w-3.5 h-3.5 text-blue-400"></i><span id="hud-altitude">Alt: 0m</span></span>
+                    <span class="flex items-center space-x-1"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i><span id="hud-accuracy">±5m</span></span>
                 </div>
             </div>
 
-            <!-- Notas -->
+            <div id="box-compass" class="bg-slate-800/85 p-2 rounded-xl border border-slate-700/80 flex items-center justify-between shadow text-xs">
+                <span class="font-bold text-slate-300">Rumbo:</span>
+                <span id="hud-heading-cardinal" class="font-black text-amber-400">N (0°)</span>
+            </div>
+
             <div id="box-notes" class="bg-slate-800/85 px-3 py-2 rounded-xl border border-slate-700/80 text-xs text-slate-200 italic flex items-center space-x-2 truncate shadow font-sans">
                 <i data-lucide="file-text" class="w-4 h-4 text-slate-400 shrink-0"></i>
                 <span id="hud-notes" class="truncate font-bold">Revisión técnica de infraestructura</span>
@@ -179,7 +164,7 @@
                             <input type="checkbox" id="toggle-coords" checked onchange="toggleHudElements()" class="w-5 h-5 accent-blue-600">
                         </label>
                         <label class="flex items-center justify-between p-3 bg-slate-800/85 rounded-xl cursor-pointer">
-                            <span class="font-medium">🧭 Brújula / Rosa Náutica</span>
+                            <span class="font-medium">🧭 Brújula / Rumbo</span>
                             <input type="checkbox" id="toggle-compass" checked onchange="toggleHudElements()" class="w-5 h-5 accent-blue-600">
                         </label>
                     </div>
@@ -343,9 +328,6 @@
                         currentHeadingDegrees = Math.round(e.alpha);
                         const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
                         currentCardinal = dirs[Math.round(currentHeadingDegrees / 45) % 8];
-
-                        const rose = document.getElementById('compass-rose');
-                        rose.style.transform = `rotate(${-currentHeadingDegrees}deg)`;
                         document.getElementById('hud-heading-cardinal').innerText = `${currentCardinal} (${currentHeadingDegrees}°)`;
                     }
                 });
@@ -385,7 +367,7 @@
             const cornerRadius = 30;
 
             // ================= RECUADRO SUPERIOR EN CANVAS =================
-            const topBoxHeight = 210;
+            const topBoxHeight = 250;
             const topBoxY = margin;
 
             ctx.save();
@@ -401,10 +383,10 @@
             ctx.strokeStyle = 'rgba(71, 85, 105, 0.8)';
             ctx.stroke();
 
-            // Empresa, Hora y Fecha en Letras
+            // Empresa, Logo, Hora y Fecha en Letras
             ctx.fillStyle = '#FFFFFF';
             ctx.font = 'bold 36px sans-serif';
-            ctx.fillText(document.getElementById('input-company').value, margin + 40, topBoxY + 55);
+            ctx.fillText(document.getElementById('input-company').value, margin + 40, topBoxY + 52);
 
             const now = new Date();
             const timeStr = now.toLocaleTimeString();
@@ -415,52 +397,19 @@
             ctx.font = 'bold 28px monospace';
             ctx.fillStyle = '#60A5FA';
             ctx.textAlign = 'right';
-            ctx.fillText(timeStr, margin + boxWidth - 40, topBoxY + 50);
+            ctx.fillText(timeStr, margin + boxWidth - 40, topBoxY + 48);
 
             ctx.font = 'bold 20px monospace';
             ctx.fillStyle = '#CBD5E1';
-            ctx.fillText(`${dateLetterStr} (${currentGMTOffset})`, margin + boxWidth - 40, topBoxY + 85);
+            ctx.fillText(`${dateLetterStr} (${currentGMTOffset})`, margin + boxWidth - 40, topBoxY + 82);
 
-            // Dirección y Clima
-            if (document.getElementById('toggle-address').checked) {
-                ctx.textAlign = 'left';
-                ctx.font = 'bold 26px sans-serif';
-                ctx.fillStyle = '#34D399';
-                ctx.fillText(`📍 ${currentAddress}`, margin + 40, topBoxY + 145);
-            }
-            if (document.getElementById('toggle-weather').checked) {
-                ctx.textAlign = 'right';
-                ctx.font = 'bold 24px sans-serif';
-                ctx.fillStyle = '#FBBF24';
-                ctx.fillText(`28°C · Soleado`, margin + boxWidth - 40, topBoxY + 145);
-            }
-            ctx.restore();
-
-            // ================= RECUADRO INFERIOR EN CANVAS =================
-            const bottomBoxHeight = 280;
-            const bottomBoxY = canvas.height - bottomBoxHeight - margin;
-
-            ctx.save();
-            ctx.beginPath();
-            if (ctx.roundRect) {
-                ctx.roundRect(margin, bottomBoxY, boxWidth, bottomBoxHeight, cornerRadius);
-            } else {
-                ctx.rect(margin, bottomBoxY, boxWidth, bottomBoxHeight);
-            }
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-            ctx.fill();
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = 'rgba(71, 85, 105, 0.8)';
-            ctx.stroke();
-
+            // Minimapa Arriba a la Izquierda
             const showMap = document.getElementById('toggle-map').checked;
-            let leftColX = margin + 40;
-            let rightColX = margin + 260;
+            let mapSize = 130;
+            let mapX = margin + 40;
+            let mapY = topBoxY + 95;
 
             if (showMap) {
-                const mapSize = 170;
-                const mapY = bottomBoxY + 35;
-
                 try {
                     const tileZ = 17;
                     const xTile = Math.floor((currentLon + 180) / 360 * Math.pow(2, tileZ));
@@ -481,49 +430,79 @@
                         ctx.save();
                         ctx.beginPath();
                         if (ctx.roundRect) {
-                            ctx.roundRect(leftColX, mapY, mapSize, mapSize, 16);
+                            ctx.roundRect(mapX, mapY, mapSize, mapSize, 14);
                         } else {
-                            ctx.rect(leftColX, mapY, mapSize, mapSize);
+                            ctx.rect(mapX, mapY, mapSize, mapSize);
                         }
                         ctx.clip();
-                        ctx.drawImage(mapImg, leftColX, mapY, mapSize, mapSize);
+                        ctx.drawImage(mapImg, mapX, mapY, mapSize, mapSize);
 
-                        // Marcador central del minimapa
                         ctx.beginPath();
-                        ctx.arc(leftColX + mapSize / 2, mapY + mapSize / 2, 8, 0, 2 * Math.PI);
+                        ctx.arc(mapX + mapSize / 2, mapY + mapSize / 2, 7, 0, 2 * Math.PI);
                         ctx.fillStyle = '#3b82f6';
                         ctx.fill();
-                        ctx.lineWidth = 3;
+                        ctx.lineWidth = 2;
                         ctx.strokeStyle = '#ffffff';
                         ctx.stroke();
                         ctx.restore();
 
                         ctx.lineWidth = 2;
                         ctx.strokeStyle = '#3b82f6';
-                        ctx.strokeRect(leftColX, mapY, mapSize, mapSize);
+                        ctx.strokeRect(mapX, mapY, mapSize, mapSize);
                     }
                 } catch(e) {}
             }
 
-            // Datos de la Columna Derecha
-            let colY = bottomBoxY + 65;
+            // Dirección y Clima al lado del minimapa superior
+            let rightDataX = mapX + mapSize + 30;
+            if (document.getElementById('toggle-address').checked) {
+                ctx.textAlign = 'left';
+                ctx.font = 'bold 24px sans-serif';
+                ctx.fillStyle = '#34D399';
+                ctx.fillText(`📍 ${currentAddress}`, rightDataX, mapY + 45);
+            }
+            if (document.getElementById('toggle-weather').checked) {
+                ctx.font = 'bold 22px sans-serif';
+                ctx.fillStyle = '#FBBF24';
+                ctx.fillText(`28°C · Soleado`, rightDataX, mapY + 95);
+            }
+            ctx.restore();
+
+            // ================= RECUADRO INFERIOR EN CANVAS =================
+            const bottomBoxHeight = 220;
+            const bottomBoxY = canvas.height - bottomBoxHeight - margin;
+
+            ctx.save();
+            ctx.beginPath();
+            if (ctx.roundRect) {
+                ctx.roundRect(margin, bottomBoxY, boxWidth, bottomBoxHeight, cornerRadius);
+            } else {
+                ctx.rect(margin, bottomBoxY, boxWidth, bottomBoxHeight);
+            }
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = 'rgba(71, 85, 105, 0.8)';
+            ctx.stroke();
+
+            let colY = bottomBoxY + 50;
             if (document.getElementById('toggle-coords').checked) {
                 ctx.textAlign = 'left';
                 ctx.font = '24px monospace';
                 ctx.fillStyle = '#F8FAFC';
-                ctx.fillText(`GPS: ${currentLat.toFixed(5)}, ${currentLon.toFixed(5)}`, rightColX, colY);
+                ctx.fillText(`GPS: ${currentLat.toFixed(5)}, ${currentLon.toFixed(5)}`, margin + 40, colY);
                 colY += 45;
-                ctx.fillText(`Altitud: ${Math.round(currentAlt)}m  |  ±${Math.round(currentAccuracy)}m`, rightColX, colY);
-                colY += 55;
+                ctx.fillText(`Altitud: ${Math.round(currentAlt)}m  |  ±${Math.round(currentAccuracy)}m`, margin + 40, colY);
+                colY += 50;
             }
 
             if (document.getElementById('toggle-compass').checked) {
                 ctx.font = 'bold 26px monospace';
                 ctx.fillStyle = '#FBBF24';
-                ctx.fillText(`Rumbo: ${currentCardinal} (${currentHeadingDegrees}°)`, rightColX, colY);
+                ctx.fillText(`Rumbo: ${currentCardinal} (${currentHeadingDegrees}°)`, margin + 40, colY);
             }
 
-            // Nota del Inspector
+            // Nota del Inspector Abajo
             ctx.textAlign = 'left';
             ctx.font = 'italic 22px sans-serif';
             ctx.fillStyle = '#CBD5E1';
@@ -531,7 +510,7 @@
 
             ctx.restore();
 
-            // Exportación limpia a la Galería Interna
+            // Exportación limpia a la Galería
             canvas.toBlob((blob) => {
                 galleryItems.unshift({
                     id: Date.now(),
@@ -643,3 +622,4 @@
     </script>
 </body>
 </html>
+
