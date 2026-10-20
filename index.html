@@ -388,7 +388,7 @@
             canvas.height = video.videoHeight || 1080;
             const ctx = canvas.getContext('2d');
 
-            // 1. Dibuja únicamente el fotograma limpio de la cámara
+            // 1. Fotograma limpio de la cámara
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             const margin = 45;
@@ -397,9 +397,9 @@
 
             const showMap = document.getElementById('toggle-map').checked;
             const showCompass = document.getElementById('toggle-compass').checked;
-            const boxHeight = 475;
+            const boxHeight = 440;
             const boxY = canvas.height - boxHeight - margin;
-            const cornerRadius = 35;
+            const cornerRadius = 30;
 
             // 2. Fondo semitransparente redondeado y elegante
             ctx.save();
@@ -409,16 +409,16 @@
             } else {
                 ctx.rect(boxX, boxY, boxWidth, boxHeight);
             }
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
             ctx.fill();
             ctx.lineWidth = 3;
             ctx.strokeStyle = 'rgba(71, 85, 105, 0.8)';
             ctx.stroke();
 
-            // 3. Encabezado de la Tarjeta (Empresa, Hora y Fecha completa en letras)
+            // 3. Encabezado (Empresa, Hora y Fecha completa en letras)
             ctx.fillStyle = '#FFFFFF';
-            ctx.font = 'bold 38px sans-serif';
-            ctx.fillText(document.getElementById('input-company').value, boxX + 45, boxY + 55);
+            ctx.font = 'bold 36px sans-serif';
+            ctx.fillText(document.getElementById('input-company').value, boxX + 40, boxY + 52);
 
             const now = new Date();
             const timeStr = now.toLocaleTimeString();
@@ -426,266 +426,13 @@
             let dateLetterStr = now.toLocaleDateString('es-ES', options);
             dateLetterStr = dateLetterStr.charAt(0).toUpperCase() + dateLetterStr.slice(1);
 
-            ctx.font = 'bold 30px monospace';
+            ctx.font = 'bold 28px monospace';
             ctx.fillStyle = '#60A5FA';
             ctx.textAlign = 'right';
-            ctx.fillText(timeStr, boxX + boxWidth - 45, boxY + 50);
+            ctx.fillText(timeStr, boxX + boxWidth - 40, boxY + 48);
 
-            ctx.font = 'bold 22px monospace';
+            ctx.font = 'bold 20px monospace';
             ctx.fillStyle = '#CBD5E1';
-            ctx.fillText(`${dateLetterStr} (${currentGMTOffset})`, boxX + boxWidth - 45, boxY + 88);
+            ctx.fillText(`${dateLetterStr} (${currentGMTOffset})`, boxX + boxWidth - 40, boxY + 82);
 
-            let currentY = 130;
-
-            // 4. Ubicación y Clima
-            if (document.getElementById('toggle-address').checked) {
-                ctx.textAlign = 'left';
-                ctx.font = 'bold 26px sans-serif';
-                ctx.fillStyle = '#34D399';
-                ctx.fillText(`📍 ${currentAddress}`, boxX + 45, boxY + currentY);
-            }
-            if (document.getElementById('toggle-weather').checked) {
-                ctx.textAlign = 'right';
-                ctx.font = 'bold 24px sans-serif';
-                ctx.fillStyle = '#FBBF24';
-                ctx.fillText(`28°C · Soleado`, boxX + boxWidth - 45, boxY + currentY);
-            }
-            if (document.getElementById('toggle-address').checked || document.getElementById('toggle-weather').checked) {
-                currentY += 65;
-            }
-
-            // 5. Distribución Simétrica en 2 Columnas (Mapa a la Izq, Datos a la Der)
-            let leftColX = boxX + 45;
-            let rightColX = boxX + 275; 
-            let contentStartY = currentY;
-
-            if (showMap) {
-                const mapSize = 200;
-                const mapY = boxY + contentStartY;
-
-                try {
-                    const tileZ = 17;
-                    const xTile = Math.floor((currentLon + 180) / 360 * Math.pow(2, tileZ));
-                    const yTile = Math.floor((1 - Math.log(Math.tan(currentLat * Math.PI / 180) + 1 / Math.cos(currentLat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, tileZ));
-                    const subdomains = ['mt0', 'mt1', 'mt2', 'mt3'];
-                    const sub = subdomains[Math.abs(Math.sin(currentLat + currentLon)) * 4 | 0];
-                    const tileUrl = `https://${sub}.google.com/vt/lyrs=s,h&x=${xTile}&y=${yTile}&z=${tileZ}`;
-
-                    const mapImg = await new Promise((resolve) => {
-                        const img = new Image();
-                        img.crossOrigin = 'anonymous';
-                        img.onload = () => resolve(img);
-                        img.onerror = () => resolve(null);
-                        img.src = tileUrl;
-                    });
-
-                    if (mapImg) {
-                        ctx.save();
-                        ctx.beginPath();
-                        if (ctx.roundRect) {
-                            ctx.roundRect(leftColX, mapY, mapSize, mapSize, 18);
-                        } else {
-                            ctx.rect(leftColX, mapY, mapSize, mapSize);
-                        }
-                        ctx.clip();
-                        ctx.drawImage(mapImg, leftColX, mapY, mapSize, mapSize);
-
-                        // Marcador central en el minimapa
-                        ctx.beginPath();
-                        ctx.arc(leftColX + mapSize / 2, mapY + mapSize / 2, 9, 0, 2 * Math.PI);
-                        ctx.fillStyle = '#3b82f6';
-                        ctx.fill();
-                        ctx.lineWidth = 3;
-                        ctx.strokeStyle = '#ffffff';
-                        ctx.stroke();
-                        ctx.restore();
-
-                        ctx.lineWidth = 2;
-                        ctx.strokeStyle = '#3b82f6';
-                        ctx.strokeRect(leftColX, mapY, mapSize, mapSize);
-                    }
-                } catch(e) {}
-            }
-
-            // Columna Derecha con espaciado vertical milimétrico
-            let colY = contentStartY + 15;
-            if (document.getElementById('toggle-coords').checked) {
-                ctx.textAlign = 'left';
-                ctx.font = '24px monospace';
-                ctx.fillStyle = '#F8FAFC';
-                ctx.fillText(`GPS: ${currentLat.toFixed(5)}, ${currentLon.toFixed(5)}`, rightColX, boxY + colY);
-                colY += 45;
-                ctx.fillText(`Altitud: ${Math.round(currentAlt)}m  |  ±${Math.round(currentAccuracy)}m`, rightColX, boxY + colY);
-                colY += 60;
-            }
-
-            if (showCompass) {
-                ctx.font = 'bold 26px monospace';
-                ctx.fillStyle = '#FBBF24';
-                ctx.fillText(`Rumbo: ${currentCardinal} (${currentHeadingDegrees}°)`, rightColX, boxY + colY);
-                colY += 50;
-
-                // Rosa Náutica pequeña alineada perfectamente
-                const compX = rightColX + 35;
-                const compY = boxY + colY + 12;
-                const radius = 25;
-
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(compX, compY, radius, 0, 2 * Math.PI);
-                ctx.fillStyle = 'rgba(30, 41, 59, 0.9)';
-                ctx.fill();
-                ctx.lineWidth = 2;
-                ctx.strokeStyle = '#475569';
-                ctx.stroke();
-
-                ctx.fillStyle = '#EF4444';
-                ctx.font = 'bold 12px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText('N', compX, compY - radius + 10);
-
-                ctx.translate(compX, compY);
-                ctx.rotate((currentHeadingDegrees * Math.PI) / 180);
-
-                ctx.beginPath();
-                ctx.moveTo(0, -15);
-                ctx.lineTo(4, 0);
-                ctx.lineTo(0, 10);
-                ctx.fillStyle = '#EF4444';
-                ctx.fill();
-
-                ctx.beginPath();
-                ctx.moveTo(0, 15);
-                ctx.lineTo(-4, 0);
-                ctx.lineTo(0, 10);
-                ctx.fillStyle = '#94A3B8';
-                ctx.fill();
-
-                ctx.restore();
-
-                ctx.textAlign = 'left';
-                ctx.font = 'bold 20px monospace';
-                ctx.fillStyle = '#CBD5E1';
-                ctx.fillText(`Brújula Activa`, compX + 45, compY + 7);
-            }
-
-            // 6. Notas al pie de la caja con margen seguro
-            ctx.textAlign = 'left';
-            ctx.font = 'italic 22px sans-serif';
-            ctx.fillStyle = '#CBD5E1';
-            ctx.fillText(`Nota: ${document.getElementById('input-notes').value}`, boxX + 45, boxY + boxHeight - 25);
-
-            ctx.restore();
-
-            // Exportación limpia de la foto final
-            canvas.toBlob((blob) => {
-                galleryItems.unshift({
-                    id: Date.now(),
-                    type: 'image',
-                    url: URL.createObjectURL(blob),
-                    date: new Date().toLocaleString()
-                });
-                updateGalleryUI();
-                alert("¡Foto guardada con éxito en la galería!");
-            }, 'image/jpeg', 0.95);
-        }
-
-        function toggleVideoRecording() {
-            if (!isRecording) {
-                recordedChunks = [];
-                try {
-                    mediaRecorder = new MediaRecorder(videoStream, { mimeType: 'video/webm;codecs=vp9' });
-                } catch(e) {
-                    mediaRecorder = new MediaRecorder(videoStream);
-                }
-                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
-                mediaRecorder.onstop = () => {
-                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
-                    galleryItems.unshift({
-                        id: Date.now(),
-                        type: 'video',
-                        url: URL.createObjectURL(blob),
-                        date: new Date().toLocaleString()
-                    });
-                    updateGalleryUI();
-                    alert("¡Video grabado y guardado en la galería!");
-                };
-                mediaRecorder.start();
-                isRecording = true;
-                document.getElementById('recording-badge').classList.remove('hidden');
-                document.getElementById('btn-record').className = "p-4 rounded-2xl bg-red-600 text-white transition flex flex-col items-center animate-pulse border border-red-500";
-
-                recordingSeconds = 0;
-                recordingTimer = setInterval(() => {
-                    recordingSeconds++;
-                    let m = Math.floor(recordingSeconds / 60).toString().padStart(2, '0');
-                    let s = (recordingSeconds % 60).toString().padStart(2, '0');
-                    document.getElementById('recording-time').innerText = `${m}:${s}`;
-                }, 1000);
-            } else {
-                mediaRecorder.stop();
-                isRecording = false;
-                clearInterval(recordingTimer);
-                document.getElementById('recording-badge').classList.add('hidden');
-                document.getElementById('btn-record').className = "p-4 rounded-2xl bg-slate-800 text-slate-200 transition flex flex-col items-center border border-slate-700";
-            }
-        }
-
-        function openGalleryModal() {
-            document.getElementById('gallery-modal').classList.toggle('hidden');
-            updateGalleryUI();
-        }
-
-        function updateGalleryUI() {
-            const grid = document.getElementById('gallery-grid');
-            document.getElementById('gallery-count').innerText = galleryItems.length;
-            const badge = document.getElementById('gallery-badge');
-            if (galleryItems.length > 0) {
-                badge.innerText = galleryItems.length;
-                badge.classList.remove('hidden');
-            } else {
-                badge.classList.add('hidden');
-            }
-
-            grid.innerHTML = '';
-            galleryItems.forEach((item, idx) => {
-                const div = document.createElement('div');
-                div.className = "relative aspect-square bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 cursor-pointer hover:opacity-95 transition";
-                div.onclick = () => openViewer(idx);
-                div.innerHTML = item.type === 'image' 
-                    ? `<img src="${item.url}" class="w-full h-full object-cover">` 
-                    : `<video src="${item.url}" class="w-full h-full object-cover"></video><div class="absolute inset-0 bg-black/40 flex items-center justify-center"><i data-lucide="play-circle" class="w-12 h-12 text-white"></i></div>`;
-                grid.appendChild(div);
-            });
-            lucide.createIcons();
-        }
-
-        function openViewer(idx) {
-            currentViewerIndex = idx;
-            const item = galleryItems[idx];
-            const container = document.getElementById('viewer-container');
-            document.getElementById('viewer-date').innerText = item.date;
-            container.innerHTML = item.type === 'image' 
-                ? `<img src="${item.url}" class="max-h-full max-w-full object-contain rounded-xl">` 
-                : `<video src="${item.url}" controls autoplay class="max-h-full max-w-full object-contain rounded-xl"></video>`;
-            document.getElementById('viewer-modal').classList.remove('hidden');
-        }
-
-        function closeViewer() { document.getElementById('viewer-modal').classList.add('hidden'); currentViewerIndex = null; }
-
-        function downloadCurrentMedia() {
-            const item = galleryItems[currentViewerIndex];
-            const a = document.createElement('a');
-            a.href = item.url;
-            a.download = `Captura_GPS_${item.id}.${item.type === 'image' ? 'jpg' : 'webm'}`;
-            a.click();
-        }
-
-        function deleteCurrentMedia() {
-            galleryItems.splice(currentViewerIndex, 1);
-            closeViewer();
-            updateGalleryUI();
-        }
-    </script>
-</body>
-</html>
+            let currentY
