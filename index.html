@@ -35,12 +35,12 @@
         <canvas id="snapshot-canvas" class="hidden"></canvas>
 
         <!-- PANEL HUD EN PANTALLA -->
-        <div class="absolute inset-x-2.5 bottom-2.5 bg-slate-900/80 backdrop-blur-xl border-2 border-slate-700/80 rounded-3xl p-4 shadow-[0_15px_40px_rgba(0,0,0,0.85)] flex flex-col space-y-3 pointer-events-none z-10">
+        <div class="absolute inset-x-3 bottom-3 bg-slate-900/85 backdrop-blur-xl border-2 border-slate-700/80 rounded-3xl p-4 shadow-[0_15px_40px_rgba(0,0,0,0.85)] flex flex-col space-y-3 pointer-events-none z-10">
             
             <!-- SECCIÓN 1: Empresa + Fecha en Letras y Hora -->
-            <div class="flex justify-between items-center bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700/80 shadow-inner">
+            <div class="flex justify-between items-center bg-slate-800/85 p-3.5 rounded-2xl border border-slate-700/80 shadow-inner">
                 <div class="flex items-center space-x-3.5">
-                    <div class="w-14 h-14 bg-blue-600/90 rounded-2xl flex items-center justify-center font-black text-white text-2xl shadow-lg border border-blue-400/80" id="logo-container">
+                    <div class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center font-black text-white text-2xl shadow-lg border border-blue-400/80" id="logo-container">
                         EM
                     </div>
                     <div>
@@ -56,17 +56,17 @@
 
             <!-- SECCIÓN 2: Dirección y Clima -->
             <div class="grid grid-cols-12 gap-2.5 text-sm">
-                <div id="box-address" class="col-span-8 flex items-center space-x-2.5 bg-slate-800/80 px-3.5 py-2.5 rounded-2xl border border-slate-700/80 truncate shadow">
+                <div id="box-address" class="col-span-8 flex items-center space-x-2.5 bg-slate-800/85 px-3.5 py-2.5 rounded-2xl border border-slate-700/80 truncate shadow">
                     <i data-lucide="map-pin" class="w-5 h-5 text-emerald-400 shrink-0"></i>
                     <span id="hud-address" class="truncate font-extrabold text-slate-100 text-sm">Obteniendo ubicación y dirección...</span>
                 </div>
-                <div id="box-weather" class="col-span-4 flex items-center justify-center space-x-2 bg-slate-800/80 px-3.5 py-2.5 rounded-2xl border border-slate-700/80 font-extrabold text-amber-300 shadow text-sm">
+                <div id="box-weather" class="col-span-4 flex items-center justify-center space-x-2 bg-slate-800/85 px-3.5 py-2.5 rounded-2xl border border-slate-700/80 font-extrabold text-amber-300 shadow text-sm">
                     <i data-lucide="cloud-sun" class="w-5 h-5 text-amber-400 shrink-0"></i>
                     <span id="hud-weather">28°C · Soleado</span>
                 </div>
             </div>
 
-            <!-- SECCIÓN 3: Minimapa (5 col) + Datos y Brújula (7 col) -->
+            <!-- SECCIÓN 3: Minimapa (Izq) + Datos y Brújula (Der) -->
             <div class="grid grid-cols-12 gap-3 items-center">
                 
                 <!-- Minimapa Satelital Grande -->
@@ -78,7 +78,7 @@
                 <div class="col-span-7 flex flex-col space-y-2.5">
                     
                     <!-- Coordenadas y Altitud -->
-                    <div id="box-coords" class="bg-slate-800/80 p-3 rounded-2xl border border-slate-700/80 flex flex-col space-y-1 font-mono text-xs shadow">
+                    <div id="box-coords" class="bg-slate-800/85 p-3 rounded-2xl border border-slate-700/80 flex flex-col space-y-1 font-mono text-xs shadow">
                         <div class="flex items-center space-x-2 text-slate-100 font-bold">
                             <i data-lucide="crosshair" class="w-4 h-4 text-red-400 shrink-0"></i>
                             <span id="hud-coords" class="truncate font-black text-sm">Lat: 0.0000, Lon: 0.0000</span>
@@ -90,7 +90,7 @@
                     </div>
 
                     <!-- Rosa Náutica Grande -->
-                    <div id="box-compass" class="bg-slate-800/80 p-2.5 rounded-2xl border border-slate-700/80 flex items-center justify-around shadow">
+                    <div id="box-compass" class="bg-slate-800/85 p-2.5 rounded-2xl border border-slate-700/80 flex items-center justify-around shadow">
                         <div class="relative w-12 h-12 flex items-center justify-center shrink-0">
                             <svg id="compass-rose" class="compass-rose w-12 h-12" viewBox="0 0 100 100">
                                 <circle cx="50" cy="50" r="46" fill="none" stroke="#64748B" stroke-width="4" />
@@ -112,7 +112,7 @@
                     </div>
 
                     <!-- Notas -->
-                    <div id="box-notes" class="bg-slate-800/80 px-3 py-2 rounded-2xl border border-slate-700/80 text-xs text-slate-200 italic flex items-center space-x-2 truncate shadow font-sans">
+                    <div id="box-notes" class="bg-slate-800/85 px-3 py-2 rounded-2xl border border-slate-700/80 text-xs text-slate-200 italic flex items-center space-x-2 truncate shadow font-sans">
                         <i data-lucide="file-text" class="w-4 h-4 text-slate-400 shrink-0"></i>
                         <span id="hud-notes" class="truncate font-bold">Revisión técnica de infraestructura</span>
                     </div>
@@ -172,23 +172,23 @@
                 <div class="pt-3 border-t border-slate-800">
                     <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Elementos visibles en pantalla</h4>
                     <div class="space-y-2">
-                        <label class="flex items-center justify-between p-3 bg-slate-800/80 rounded-xl cursor-pointer">
+                        <label class="flex items-center justify-between p-3 bg-slate-800/85 rounded-xl cursor-pointer">
                             <span class="font-medium">📍 Dirección / Sitio</span>
                             <input type="checkbox" id="toggle-address" checked onchange="toggleHudElements()" class="w-5 h-5 accent-blue-600">
                         </label>
-                        <label class="flex items-center justify-between p-3 bg-slate-800/80 rounded-xl cursor-pointer">
+                        <label class="flex items-center justify-between p-3 bg-slate-800/85 rounded-xl cursor-pointer">
                             <span class="font-medium">🌤️ Estado del Tiempo</span>
                             <input type="checkbox" id="toggle-weather" checked onchange="toggleHudElements()" class="w-5 h-5 accent-blue-600">
                         </label>
-                        <label class="flex items-center justify-between p-3 bg-slate-800/80 rounded-xl cursor-pointer">
+                        <label class="flex items-center justify-between p-3 bg-slate-800/85 rounded-xl cursor-pointer">
                             <span class="font-medium">🗺️ Minimapa Satelital</span>
                             <input type="checkbox" id="toggle-map" checked onchange="toggleHudElements()" class="w-5 h-5 accent-blue-600">
                         </label>
-                        <label class="flex items-center justify-between p-3 bg-slate-800/80 rounded-xl cursor-pointer">
+                        <label class="flex items-center justify-between p-3 bg-slate-800/85 rounded-xl cursor-pointer">
                             <span class="font-medium">🎯 Coordenadas y Altitud</span>
                             <input type="checkbox" id="toggle-coords" checked onchange="toggleHudElements()" class="w-5 h-5 accent-blue-600">
                         </label>
-                        <label class="flex items-center justify-between p-3 bg-slate-800/80 rounded-xl cursor-pointer">
+                        <label class="flex items-center justify-between p-3 bg-slate-800/85 rounded-xl cursor-pointer">
                             <span class="font-medium">🧭 Brújula / Rosa Náutica</span>
                             <input type="checkbox" id="toggle-compass" checked onchange="toggleHudElements()" class="w-5 h-5 accent-blue-600">
                         </label>
@@ -388,19 +388,20 @@
             canvas.height = video.videoHeight || 1080;
             const ctx = canvas.getContext('2d');
 
+            // 1. Dibuja únicamente el fotograma limpio de la cámara
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            const margin = 40;
+            const margin = 45;
             const boxWidth = canvas.width - (margin * 2);
             const boxX = margin;
 
             const showMap = document.getElementById('toggle-map').checked;
             const showCompass = document.getElementById('toggle-compass').checked;
-            const boxHeight = 460;
+            const boxHeight = 475;
             const boxY = canvas.height - boxHeight - margin;
             const cornerRadius = 35;
 
-            // Fondo semitransparente redondeado simétrico
+            // 2. Fondo semitransparente redondeado y elegante
             ctx.save();
             ctx.beginPath();
             if (ctx.roundRect) {
@@ -414,9 +415,9 @@
             ctx.strokeStyle = 'rgba(71, 85, 105, 0.8)';
             ctx.stroke();
 
-            // 1. Cabecera (Empresa, Hora y Fecha)
+            // 3. Encabezado de la Tarjeta (Empresa, Hora y Fecha completa en letras)
             ctx.fillStyle = '#FFFFFF';
-            ctx.font = 'bold 36px sans-serif';
+            ctx.font = 'bold 38px sans-serif';
             ctx.fillText(document.getElementById('input-company').value, boxX + 45, boxY + 55);
 
             const now = new Date();
@@ -425,18 +426,18 @@
             let dateLetterStr = now.toLocaleDateString('es-ES', options);
             dateLetterStr = dateLetterStr.charAt(0).toUpperCase() + dateLetterStr.slice(1);
 
-            ctx.font = 'bold 28px monospace';
+            ctx.font = 'bold 30px monospace';
             ctx.fillStyle = '#60A5FA';
             ctx.textAlign = 'right';
             ctx.fillText(timeStr, boxX + boxWidth - 45, boxY + 50);
 
-            ctx.font = 'bold 20px monospace';
+            ctx.font = 'bold 22px monospace';
             ctx.fillStyle = '#CBD5E1';
-            ctx.fillText(`${dateLetterStr} (${currentGMTOffset})`, boxX + boxWidth - 45, boxY + 85);
+            ctx.fillText(`${dateLetterStr} (${currentGMTOffset})`, boxX + boxWidth - 45, boxY + 88);
 
-            let currentY = 125;
+            let currentY = 130;
 
-            // 2. Dirección y Clima (Fila completa)
+            // 4. Ubicación y Clima
             if (document.getElementById('toggle-address').checked) {
                 ctx.textAlign = 'left';
                 ctx.font = 'bold 26px sans-serif';
@@ -453,13 +454,13 @@
                 currentY += 65;
             }
 
-            // 3. Distribución en 2 Columnas Exactas y Sincronizadas
+            // 5. Distribución Simétrica en 2 Columnas (Mapa a la Izq, Datos a la Der)
             let leftColX = boxX + 45;
-            let rightColX = boxX + 270; 
+            let rightColX = boxX + 275; 
             let contentStartY = currentY;
 
             if (showMap) {
-                const mapSize = 195;
+                const mapSize = 200;
                 const mapY = boxY + contentStartY;
 
                 try {
@@ -489,9 +490,9 @@
                         ctx.clip();
                         ctx.drawImage(mapImg, leftColX, mapY, mapSize, mapSize);
 
-                        // Marcador central del minimapa
+                        // Marcador central en el minimapa
                         ctx.beginPath();
-                        ctx.arc(leftColX + mapSize / 2, mapY + mapSize / 2, 8, 0, 2 * Math.PI);
+                        ctx.arc(leftColX + mapSize / 2, mapY + mapSize / 2, 9, 0, 2 * Math.PI);
                         ctx.fillStyle = '#3b82f6';
                         ctx.fill();
                         ctx.lineWidth = 3;
@@ -506,28 +507,28 @@
                 } catch(e) {}
             }
 
-            // Columna Derecha con espaciado vertical milimétrico y simétrico
+            // Columna Derecha con espaciado vertical milimétrico
             let colY = contentStartY + 15;
             if (document.getElementById('toggle-coords').checked) {
                 ctx.textAlign = 'left';
-                ctx.font = '22px monospace';
+                ctx.font = '24px monospace';
                 ctx.fillStyle = '#F8FAFC';
                 ctx.fillText(`GPS: ${currentLat.toFixed(5)}, ${currentLon.toFixed(5)}`, rightColX, boxY + colY);
                 colY += 45;
                 ctx.fillText(`Altitud: ${Math.round(currentAlt)}m  |  ±${Math.round(currentAccuracy)}m`, rightColX, boxY + colY);
-                colY += 55;
+                colY += 60;
             }
 
             if (showCompass) {
-                ctx.font = 'bold 24px monospace';
+                ctx.font = 'bold 26px monospace';
                 ctx.fillStyle = '#FBBF24';
                 ctx.fillText(`Rumbo: ${currentCardinal} (${currentHeadingDegrees}°)`, rightColX, boxY + colY);
                 colY += 50;
 
-                // Rosa Náutica pequeña perfectamente alineada
+                // Rosa Náutica pequeña alineada perfectamente
                 const compX = rightColX + 35;
                 const compY = boxY + colY + 12;
-                const radius = 24;
+                const radius = 25;
 
                 ctx.save();
                 ctx.beginPath();
@@ -547,16 +548,16 @@
                 ctx.rotate((currentHeadingDegrees * Math.PI) / 180);
 
                 ctx.beginPath();
-                ctx.moveTo(0, -14);
+                ctx.moveTo(0, -15);
                 ctx.lineTo(4, 0);
-                ctx.lineTo(0, 9);
+                ctx.lineTo(0, 10);
                 ctx.fillStyle = '#EF4444';
                 ctx.fill();
 
                 ctx.beginPath();
-                ctx.moveTo(0, 14);
+                ctx.moveTo(0, 15);
                 ctx.lineTo(-4, 0);
-                ctx.lineTo(0, 9);
+                ctx.lineTo(0, 10);
                 ctx.fillStyle = '#94A3B8';
                 ctx.fill();
 
@@ -565,10 +566,10 @@
                 ctx.textAlign = 'left';
                 ctx.font = 'bold 20px monospace';
                 ctx.fillStyle = '#CBD5E1';
-                ctx.fillText(`Brújula Activa`, compX + 42, compY + 7);
+                ctx.fillText(`Brújula Activa`, compX + 45, compY + 7);
             }
 
-            // 4. Notas fijas al pie de la caja con margen seguro
+            // 6. Notas al pie de la caja con margen seguro
             ctx.textAlign = 'left';
             ctx.font = 'italic 22px sans-serif';
             ctx.fillStyle = '#CBD5E1';
@@ -576,6 +577,7 @@
 
             ctx.restore();
 
+            // Exportación limpia de la foto final
             canvas.toBlob((blob) => {
                 galleryItems.unshift({
                     id: Date.now(),
