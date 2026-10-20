@@ -34,24 +34,19 @@
         <video id="camera-feed" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover"></video>
         <canvas id="snapshot-canvas" class="hidden"></canvas>
 
-        <!-- Minimapa Arriba (Aún más grande y flotante sin barra negra) -->
+        <!-- Minimapa Arriba (Flotante sin barra negra) -->
         <div id="box-map" class="absolute top-4 left-4 w-52 h-52 rounded-2xl overflow-hidden border-2 border-blue-500 shadow-2xl bg-slate-950 pointer-events-none z-10">
             <div id="mini-map" class="w-full h-full"></div>
         </div>
 
-        <!-- RECUADRO INFERIOR: Todo lo demás organizado y simétrico -->
+        <!-- RECUADRO INFERIOR (Con el Logo Grande a la Derecha) -->
         <div class="absolute inset-x-3 bottom-3 bg-slate-900/85 backdrop-blur-xl border-2 border-slate-700/80 rounded-3xl p-4 shadow-[0_15px_40px_rgba(0,0,0,0.85)] flex flex-col space-y-3 pointer-events-none z-10">
             
-            <!-- Empresa, Logo, Fecha en Letras y Hora -->
+            <!-- Empresa, Fecha en Letras y Hora -->
             <div class="flex justify-between items-center bg-slate-800/85 p-3 rounded-2xl border border-slate-700/80 shadow-inner">
-                <div class="flex items-center space-x-3">
-                    <div class="w-12 h-12 bg-blue-600 rounded-2xl overflow-hidden flex items-center justify-center font-black text-white text-xl shadow-lg border border-blue-400/80" id="logo-container">
-                        <span id="logo-text">EM</span>
-                    </div>
-                    <div>
-                        <h2 class="text-base font-black text-white uppercase tracking-wider leading-tight" id="company-name-display">EMPRESA S.A.</h2>
-                        <p class="text-xs font-bold text-blue-400 mt-0.5" id="project-name-display">Inspección de Campo</p>
-                    </div>
+                <div>
+                    <h2 class="text-base font-black text-white uppercase tracking-wider leading-tight" id="company-name-display">EMPRESA S.A.</h2>
+                    <p class="text-xs font-bold text-blue-400 mt-0.5" id="project-name-display">Inspección de Campo</p>
                 </div>
                 <div class="text-right">
                     <span class="text-lg font-mono font-black text-amber-400 block leading-tight" id="hud-time">--:--:--</span>
@@ -72,7 +67,7 @@
             </div>
 
             <!-- Coordenadas y Rumbo -->
-            <div class="grid grid-cols-12 gap-2">
+            <div class="grid grid-cols-12 gap-2 items-center">
                 <div id="box-coords" class="col-span-7 bg-slate-800/85 p-2.5 rounded-xl border border-slate-700/80 flex flex-col space-y-1 font-mono text-xs shadow">
                     <div class="flex items-center space-x-2 text-slate-100 font-bold">
                         <i data-lucide="crosshair" class="w-4 h-4 text-red-400 shrink-0"></i>
@@ -84,9 +79,16 @@
                     </div>
                 </div>
 
-                <div id="box-compass" class="col-span-5 bg-slate-800/85 p-2 rounded-xl border border-slate-700/80 flex items-center justify-between shadow text-xs">
+                <div id="box-compass" class="col-span-3 bg-slate-800/85 p-2 rounded-xl border border-slate-700/80 flex items-center justify-between shadow text-xs">
                     <span class="font-bold text-slate-300">Rumbo:</span>
                     <span id="hud-heading-cardinal" class="font-black text-amber-400">N (0°)</span>
+                </div>
+
+                <!-- Logo Grande en Pantalla (Esquina Inferior Derecha del Recuadro) -->
+                <div class="col-span-2 flex justify-end">
+                    <div class="w-14 h-14 bg-blue-600 rounded-2xl overflow-hidden flex items-center justify-center font-black text-white text-xl shadow-xl border-2 border-blue-400" id="logo-container">
+                        <span id="logo-text">EM</span>
+                    </div>
                 </div>
             </div>
 
@@ -392,7 +394,7 @@
             // ================= 2. MINIMAPA SUPERIOR GRANDE EN CANVAS (SIN BARRA NEGRA) =================
             const showMap = document.getElementById('toggle-map').checked;
             if (showMap) {
-                const mapSize = 320; // Minimapa aún más grande y detallado
+                const mapSize = 320;
                 const mapX = margin;
                 const mapY = margin;
 
@@ -440,7 +442,7 @@
                 } catch(e) {}
             }
 
-            // ================= 3. RECUADRO INFERIOR EN CANVAS (TODO LO DEMÁS) =================
+            // ================= 3. RECUADRO INFERIOR EN CANVAS =================
             const bottomBoxHeight = 350;
             const bottomBoxY = canvas.height - bottomBoxHeight - margin;
 
@@ -457,47 +459,11 @@
             ctx.strokeStyle = 'rgba(71, 85, 105, 0.8)';
             ctx.stroke();
 
-            // Dibujar Logotipo Personalizado o Iniciales en el Canvas
-            const logoX = margin + 40;
-            const logoY = bottomBoxY + 30;
-            const logoSize = 65;
-
-            if (customLogoImage) {
-                ctx.save();
-                ctx.beginPath();
-                if (ctx.roundRect) { ctx.roundRect(logoX, logoY, logoSize, logoSize, 14); }
-                else { ctx.rect(logoX, logoY, logoSize, logoSize); }
-                ctx.clip();
-                ctx.drawImage(customLogoImage, logoX, logoY, logoSize, logoSize);
-                ctx.restore();
-                ctx.lineWidth = 2;
-                ctx.strokeStyle = '#60A5FA';
-                ctx.strokeRect(logoX, logoY, logoSize, logoSize);
-            } else {
-                ctx.save();
-                ctx.beginPath();
-                if (ctx.roundRect) { ctx.roundRect(logoX, logoY, logoSize, logoSize, 14); }
-                else { ctx.rect(logoX, logoY, logoSize, logoSize); }
-                ctx.fillStyle = '#2563EB';
-                ctx.fill();
-                ctx.lineWidth = 2;
-                ctx.strokeStyle = '#60A5FA';
-                ctx.stroke();
-                ctx.fillStyle = '#FFFFFF';
-                ctx.font = 'bold 26px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                const compText = document.getElementById('input-company').value.substring(0, 2).toUpperCase();
-                ctx.fillText(compText, logoX + logoSize / 2, logoY + logoSize / 2);
-                ctx.restore();
-            }
-
-            // Empresa y Proyecto
+            // Empresa y Proyecto (Arriba dentro del recuadro inferior)
             ctx.textAlign = 'left';
-            ctx.textBaseline = 'alphabetic';
             ctx.fillStyle = '#FFFFFF';
             ctx.font = 'bold 36px sans-serif';
-            ctx.fillText(document.getElementById('input-company').value, logoX + logoSize + 25, bottomBoxY + 58);
+            ctx.fillText(document.getElementById('input-company').value, margin + 40, bottomBoxY + 55);
 
             const now = new Date();
             const timeStr = now.toLocaleTimeString();
@@ -544,13 +510,47 @@
                 ctx.font = 'bold 26px monospace';
                 ctx.fillStyle = '#FBBF24';
                 ctx.fillText(`Rumbo: ${currentCardinal} (${currentHeadingDegrees}°)`, margin + 40, bottomBoxY + currentY);
-                currentY += 50;
             }
 
             // Nota del Inspector
             ctx.font = 'italic 22px sans-serif';
             ctx.fillStyle = '#CBD5E1';
             ctx.fillText(`Nota: ${document.getElementById('input-notes').value}`, margin + 40, bottomBoxY + bottomBoxHeight - 25);
+
+            // ================= LOGOTIPO GRANDE EN LA ESQUINA INFERIOR DERECHA =================
+            const logoSize = 100; // Logo grande aprovechando el espacio
+            const logoX = margin + boxWidth - logoSize - 40;
+            const logoY = bottomBoxY + bottomBoxHeight - logoSize - 35;
+
+            if (customLogoImage) {
+                ctx.save();
+                ctx.beginPath();
+                if (ctx.roundRect) { ctx.roundRect(logoX, logoY, logoSize, logoSize, 20); }
+                else { ctx.rect(logoX, logoY, logoSize, logoSize); }
+                ctx.clip();
+                ctx.drawImage(customLogoImage, logoX, logoY, logoSize, logoSize);
+                ctx.restore();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#60A5FA';
+                ctx.strokeRect(logoX, logoY, logoSize, logoSize);
+            } else {
+                ctx.save();
+                ctx.beginPath();
+                if (ctx.roundRect) { ctx.roundRect(logoX, logoY, logoSize, logoSize, 20); }
+                else { ctx.rect(logoX, logoY, logoSize, logoSize); }
+                ctx.fillStyle = '#2563EB';
+                ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#60A5FA';
+                ctx.stroke();
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = 'bold 42px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const compText = document.getElementById('input-company').value.substring(0, 2).toUpperCase();
+                ctx.fillText(compText, logoX + logoSize / 2, logoY + logoSize / 2);
+                ctx.restore();
+            }
 
             ctx.restore();
 
