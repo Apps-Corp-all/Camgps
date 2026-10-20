@@ -231,6 +231,7 @@
         lucide.createIcons();
 
         window.addEventListener('DOMContentLoaded', () => {
+            loadSavedSettings();
             initCamera();
             initGeolocation();
             initCompass();
@@ -239,6 +240,38 @@
             setInterval(updateClock, 1000);
             updateClock();
         });
+
+        function loadSavedSettings() {
+            if (localStorage.getItem('gps_company')) {
+                document.getElementById('input-company').value = localStorage.getItem('gps_company');
+            }
+            if (localStorage.getItem('gps_project')) {
+                document.getElementById('input-project').value = localStorage.getItem('gps_project');
+            }
+            if (localStorage.getItem('gps_notes')) {
+                document.getElementById('input-notes').value = localStorage.getItem('gps_notes');
+            }
+            if (localStorage.getItem('gps_logo')) {
+                customLogoImage = new Image();
+                customLogoImage.onload = function() {
+                    document.getElementById('logo-container').innerHTML = `<img src="${localStorage.getItem('gps_logo')}" class="w-full h-full object-cover">`;
+                };
+                customLogoImage.src = localStorage.getItem('gps_logo');
+            }
+
+            // Toggles de visibilidad
+            const toggles = ['address', 'weather', 'map', 'coords', 'compass'];
+            toggles.forEach(t => {
+                const val = localStorage.getItem(`gps_toggle_${t}`);
+                if (val !== null) {
+                    const isChecked = val === 'true';
+                    document.getElementById(`toggle-${t}`).checked = isChecked;
+                }
+            });
+
+            updateSettings();
+            toggleHudElements();
+        }
 
         async function initCamera() {
             try {
@@ -361,18 +394,25 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
+                    const base64Data = e.target.result;
+                    localStorage.setItem('gps_logo', base64Data);
                     customLogoImage = new Image();
                     customLogoImage.onload = function() {
-                        const container = document.getElementById('logo-container');
-                        container.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover">`;
+                        document.getElementById('logo-container').innerHTML = `<img src="${base64Data}" class="w-full h-full object-cover">`;
                     };
-                    customLogoImage.src = e.target.result;
+                    customLogoImage.src = base64Data;
                 };
                 reader.readAsDataURL(file);
             }
         }
 
         function toggleHudElements() {
+            const toggles = ['address', 'weather', 'map', 'coords', 'compass'];
+            toggles.forEach(t => {
+                const isChecked = document.getElementById(`toggle-${t}`).checked;
+                localStorage.setItem(`gps_toggle_${t}`, isChecked);
+            });
+
             document.getElementById('box-address').style.display = document.getElementById('toggle-address').checked ? 'flex' : 'none';
             document.getElementById('box-weather').style.display = document.getElementById('toggle-weather').checked ? 'flex' : 'none';
             document.getElementById('box-map').style.display = document.getElementById('toggle-map').checked ? 'block' : 'none';
@@ -384,9 +424,16 @@
 
         function updateSettings() {
             const comp = document.getElementById('input-company').value;
+            const proj = document.getElementById('input-project').value;
+            const notes = document.getElementById('input-notes').value;
+
+            localStorage.setItem('gps_company', comp);
+            localStorage.setItem('gps_project', proj);
+            localStorage.setItem('gps_notes', notes);
+
             document.getElementById('company-name-display').innerText = comp;
-            document.getElementById('project-name-display').innerText = document.getElementById('input-project').value;
-            document.getElementById('hud-notes').innerText = document.getElementById('input-notes').value;
+            document.getElementById('project-name-display').innerText = proj;
+            document.getElementById('hud-notes').innerText = notes;
             if (!customLogoImage) {
                 document.getElementById('logo-text').innerText = comp.substring(0, 2).toUpperCase();
             }
