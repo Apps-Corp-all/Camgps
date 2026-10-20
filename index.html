@@ -39,7 +39,7 @@
             <div id="mini-map" class="w-full h-full"></div>
         </div>
 
-        <!-- Rosa Náutica Arriba a la Derecha (Mismo tamaño del minimapa) -->
+        <!-- Rosa Náutica Arriba a la Derecha -->
         <div id="box-compass-widget" class="absolute top-4 right-4 w-52 h-52 rounded-2xl overflow-hidden border-2 border-amber-500 shadow-2xl bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center p-3 pointer-events-none z-10">
             <div class="relative w-32 h-32 flex items-center justify-center">
                 <svg id="compass-rose" class="compass-rose w-32 h-32" viewBox="0 0 100 100">
@@ -57,11 +57,11 @@
             <span id="hud-heading-cardinal" class="text-sm font-black text-amber-400 mt-2">N (0°)</span>
         </div>
 
-        <!-- RECUADRO INFERIOR (Con Dirección, Coordenadas y Logo Gigante) -->
-        <div class="absolute inset-x-3 bottom-3 bg-slate-900/85 backdrop-blur-xl border-2 border-slate-700/80 rounded-3xl p-3.5 shadow-[0_15px_40px_rgba(0,0,0,0.85)] flex flex-col space-y-2 pointer-events-none z-10">
+        <!-- RECUADRO INFERIOR PERFECTAMENTE ORGANIZADO -->
+        <div class="absolute inset-x-3 bottom-3 bg-slate-900/85 backdrop-blur-xl border-2 border-slate-700/80 rounded-3xl p-4 shadow-[0_15px_40px_rgba(0,0,0,0.85)] flex flex-col space-y-2.5 pointer-events-none z-10">
             
-            <!-- Empresa, Fecha en Letras y Hora -->
-            <div class="flex justify-between items-center bg-slate-800/85 p-2.5 rounded-2xl border border-slate-700/80 shadow-inner">
+            <!-- Fila 1: Empresa y Hora/Fecha -->
+            <div class="flex justify-between items-center bg-slate-800/85 px-3 py-2.5 rounded-2xl border border-slate-700/80 shadow-inner">
                 <div>
                     <h2 class="text-sm font-black text-white uppercase tracking-wider leading-tight" id="company-name-display">EMPRESA S.A.</h2>
                     <p class="text-[11px] font-bold text-blue-400" id="project-name-display">Inspección de Campo</p>
@@ -72,35 +72,34 @@
                 </div>
             </div>
 
-            <!-- Dirección y Clima (Sin departamentos) -->
+            <!-- Fila 2: Dirección y Clima -->
             <div class="grid grid-cols-12 gap-2 text-xs">
-                <div id="box-address" class="col-span-8 flex items-center space-x-1.5 bg-slate-800/85 px-3 py-1.5 rounded-xl border border-slate-700/80 truncate shadow">
+                <div id="box-address" class="col-span-8 flex items-center space-x-1.5 bg-slate-800/85 px-3 py-2 rounded-xl border border-slate-700/80 truncate shadow">
                     <i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-400 shrink-0"></i>
                     <span id="hud-address" class="truncate font-extrabold text-slate-100 text-[11px]">Obteniendo ubicación...</span>
                 </div>
-                <div id="box-weather" class="col-span-4 flex items-center justify-center space-x-1 bg-slate-800/85 px-3 py-1.5 rounded-xl border border-slate-700/80 font-extrabold text-amber-300 shadow text-[11px]">
+                <div id="box-weather" class="col-span-4 flex items-center justify-center space-x-1 bg-slate-800/85 px-3 py-2 rounded-xl border border-slate-700/80 font-extrabold text-amber-300 shadow text-[11px]">
                     <i data-lucide="cloud-sun" class="w-3.5 h-3.5 text-amber-400 shrink-0"></i>
                     <span id="hud-weather">28°C · Soleado</span>
                 </div>
             </div>
 
-            <!-- Coordenadas, Notas y Logo Gigante -->
-            <div class="grid grid-cols-12 gap-2 items-center">
-                <div class="col-span-9 flex flex-col space-y-1.5">
-                    <div id="box-coords" class="bg-slate-800/85 px-2.5 py-1.5 rounded-xl border border-slate-700/80 flex items-center justify-between font-mono text-[11px] text-slate-100 font-bold shadow">
+            <!-- Fila 3: Coordenadas, Nota y Logo Gigante a la Derecha -->
+            <div class="grid grid-cols-12 gap-2 items-end">
+                <div class="col-span-9 flex flex-col space-y-2">
+                    <div id="box-coords" class="bg-slate-800/85 px-3 py-2 rounded-xl border border-slate-700/80 flex items-center justify-between font-mono text-[11px] text-slate-100 font-bold shadow">
                         <span class="truncate" id="hud-coords">Lat: 0.0000, Lon: 0.0000</span>
                         <span id="hud-altitude" class="text-blue-400 ml-2">Alt: 0m (±5m)</span>
                     </div>
 
-                    <!-- Notas compactas -->
-                    <div id="box-notes" class="bg-slate-800/85 px-2.5 py-1.5 rounded-xl border border-slate-700/80 text-[11px] text-slate-200 italic flex items-center space-x-1.5 truncate shadow font-sans">
+                    <div id="box-notes" class="bg-slate-800/85 px-3 py-2 rounded-xl border border-slate-700/80 text-[11px] text-slate-200 italic flex items-center space-x-1.5 truncate shadow font-sans">
                         <i data-lucide="file-text" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
                         <span id="hud-notes" class="truncate font-bold">Revisión técnica de infraestructura</span>
                     </div>
                 </div>
 
-                <!-- Logo Gigante a la Derecha -->
-                <div class="col-span-3 flex justify-end items-center">
+                <!-- Logo Gigante (Alineado perfectamente a la derecha) -->
+                <div class="col-span-3 flex justify-end">
                     <div class="w-20 h-20 bg-blue-600 rounded-2xl overflow-hidden flex items-center justify-center font-black text-white text-2xl shadow-2xl border-2 border-blue-400" id="logo-container">
                         <span id="logo-text">EM</span>
                     </div>
@@ -327,7 +326,6 @@
                 const data = await response.json();
                 if (data && data.address) {
                     const addr = data.address;
-                    // Extraer únicamente barrio/colonia, vecindario, pueblo o ciudad (excluyendo departamento/estado y país)
                     const subLocality = addr.suburb || addr.neighbourhood || addr.residential || addr.hamlet || '';
                     const locality = addr.city || addr.town || addr.village || addr.municipality || '';
                     
@@ -527,7 +525,7 @@
                 ctx.restore();
             }
 
-            // ================= 4. RECUADRO INFERIOR EN CANVAS (CON DIRECCIÓN Y LOGO) =================
+            // ================= 4. RECUADRO INFERIOR EN CANVAS (SIMÉTRICO Y LIMPIO) =================
             const bottomBoxHeight = 310;
             const bottomBoxY = canvas.height - bottomBoxHeight - margin;
 
@@ -567,7 +565,7 @@
 
             let currentY = 105;
 
-            // Dirección (Barrio/Colonia/Ciudad sin departamento)
+            // Dirección
             if (document.getElementById('toggle-address').checked) {
                 ctx.textAlign = 'left';
                 ctx.font = 'bold 22px sans-serif';
