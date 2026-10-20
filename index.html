@@ -34,19 +34,19 @@
         <video id="camera-feed" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover"></video>
         <canvas id="snapshot-canvas" class="hidden"></canvas>
 
-        <!-- Minimapa Arriba (Más grande y flotante sin barra negra) -->
-        <div id="box-map" class="absolute top-4 left-4 w-44 h-44 rounded-2xl overflow-hidden border-2 border-blue-500 shadow-2xl bg-slate-950 pointer-events-none z-10">
+        <!-- Minimapa Arriba (Aún más grande y flotante sin barra negra) -->
+        <div id="box-map" class="absolute top-4 left-4 w-52 h-52 rounded-2xl overflow-hidden border-2 border-blue-500 shadow-2xl bg-slate-950 pointer-events-none z-10">
             <div id="mini-map" class="w-full h-full"></div>
         </div>
 
         <!-- RECUADRO INFERIOR: Todo lo demás organizado y simétrico -->
         <div class="absolute inset-x-3 bottom-3 bg-slate-900/85 backdrop-blur-xl border-2 border-slate-700/80 rounded-3xl p-4 shadow-[0_15px_40px_rgba(0,0,0,0.85)] flex flex-col space-y-3 pointer-events-none z-10">
             
-            <!-- Empresa, Fecha en Letras y Hora -->
+            <!-- Empresa, Logo, Fecha en Letras y Hora -->
             <div class="flex justify-between items-center bg-slate-800/85 p-3 rounded-2xl border border-slate-700/80 shadow-inner">
                 <div class="flex items-center space-x-3">
-                    <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center font-black text-white text-xl shadow-lg border border-blue-400/80" id="logo-container">
-                        EM
+                    <div class="w-12 h-12 bg-blue-600 rounded-2xl overflow-hidden flex items-center justify-center font-black text-white text-xl shadow-lg border border-blue-400/80" id="logo-container">
+                        <span id="logo-text">EM</span>
                     </div>
                     <div>
                         <h2 class="text-base font-black text-white uppercase tracking-wider leading-tight" id="company-name-display">EMPRESA S.A.</h2>
@@ -126,11 +126,15 @@
     <div id="settings-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl p-6 shadow-2xl flex flex-col space-y-4 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center pb-2 border-b border-slate-800">
-                <h3 class="font-bold text-lg text-white">Configuración y Elementos HUD</h3>
+                <h3 class="font-bold text-lg text-white">Configuración y Logotipo</h3>
                 <button onclick="toggleSettings()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
             
             <div class="space-y-4 text-sm">
+                <div>
+                    <label class="text-slate-300 block mb-1 font-bold">Cargar Logotipo Personalizado</label>
+                    <input type="file" id="input-logo-file" accept="image/*" onchange="loadCustomLogo(event)" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-300 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500">
+                </div>
                 <div>
                     <label class="text-slate-300 block mb-1 font-bold">Nombre de la Empresa</label>
                     <input type="text" id="input-company" value="EMPRESA S.A." oninput="updateSettings()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white text-base">
@@ -214,6 +218,7 @@
         let mediaRecorder = null, recordedChunks = [], isRecording = false;
         let recordingTimer = null, recordingSeconds = 0;
         let map = null, marker = null;
+        let customLogoImage = null;
 
         lucide.createIcons();
 
@@ -334,6 +339,22 @@
             }
         }
 
+        function loadCustomLogo(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    customLogoImage = new Image();
+                    customLogoImage.onload = function() {
+                        const container = document.getElementById('logo-container');
+                        container.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover">`;
+                    };
+                    customLogoImage.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
         function toggleHudElements() {
             document.getElementById('box-address').style.display = document.getElementById('toggle-address').checked ? 'flex' : 'none';
             document.getElementById('box-weather').style.display = document.getElementById('toggle-weather').checked ? 'flex' : 'none';
@@ -349,7 +370,9 @@
             document.getElementById('company-name-display').innerText = comp;
             document.getElementById('project-name-display').innerText = document.getElementById('input-project').value;
             document.getElementById('hud-notes').innerText = document.getElementById('input-notes').value;
-            document.getElementById('logo-container').innerText = comp.substring(0, 2).toUpperCase();
+            if (!customLogoImage) {
+                document.getElementById('logo-text').innerText = comp.substring(0, 2).toUpperCase();
+            }
         }
 
         async function capturePhoto() {
@@ -369,7 +392,7 @@
             // ================= 2. MINIMAPA SUPERIOR GRANDE EN CANVAS (SIN BARRA NEGRA) =================
             const showMap = document.getElementById('toggle-map').checked;
             if (showMap) {
-                const mapSize = 260; // Minimapa más grande
+                const mapSize = 320; // Minimapa aún más grande y detallado
                 const mapX = margin;
                 const mapY = margin;
 
@@ -393,7 +416,7 @@
                         ctx.save();
                         ctx.beginPath();
                         if (ctx.roundRect) {
-                            ctx.roundRect(mapX, mapY, mapSize, mapSize, 22);
+                            ctx.roundRect(mapX, mapY, mapSize, mapSize, 24);
                         } else {
                             ctx.rect(mapX, mapY, mapSize, mapSize);
                         }
@@ -402,7 +425,7 @@
 
                         // Marcador central
                         ctx.beginPath();
-                        ctx.arc(mapX + mapSize / 2, mapY + mapSize / 2, 10, 0, 2 * Math.PI);
+                        ctx.arc(mapX + mapSize / 2, mapY + mapSize / 2, 11, 0, 2 * Math.PI);
                         ctx.fillStyle = '#3b82f6';
                         ctx.fill();
                         ctx.lineWidth = 3;
@@ -434,10 +457,47 @@
             ctx.strokeStyle = 'rgba(71, 85, 105, 0.8)';
             ctx.stroke();
 
-            // Empresa, Logo, Hora y Fecha en Letras
+            // Dibujar Logotipo Personalizado o Iniciales en el Canvas
+            const logoX = margin + 40;
+            const logoY = bottomBoxY + 30;
+            const logoSize = 65;
+
+            if (customLogoImage) {
+                ctx.save();
+                ctx.beginPath();
+                if (ctx.roundRect) { ctx.roundRect(logoX, logoY, logoSize, logoSize, 14); }
+                else { ctx.rect(logoX, logoY, logoSize, logoSize); }
+                ctx.clip();
+                ctx.drawImage(customLogoImage, logoX, logoY, logoSize, logoSize);
+                ctx.restore();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#60A5FA';
+                ctx.strokeRect(logoX, logoY, logoSize, logoSize);
+            } else {
+                ctx.save();
+                ctx.beginPath();
+                if (ctx.roundRect) { ctx.roundRect(logoX, logoY, logoSize, logoSize, 14); }
+                else { ctx.rect(logoX, logoY, logoSize, logoSize); }
+                ctx.fillStyle = '#2563EB';
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#60A5FA';
+                ctx.stroke();
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = 'bold 26px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const compText = document.getElementById('input-company').value.substring(0, 2).toUpperCase();
+                ctx.fillText(compText, logoX + logoSize / 2, logoY + logoSize / 2);
+                ctx.restore();
+            }
+
+            // Empresa y Proyecto
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'alphabetic';
             ctx.fillStyle = '#FFFFFF';
             ctx.font = 'bold 36px sans-serif';
-            ctx.fillText(document.getElementById('input-company').value, margin + 40, bottomBoxY + 55);
+            ctx.fillText(document.getElementById('input-company').value, logoX + logoSize + 25, bottomBoxY + 58);
 
             const now = new Date();
             const timeStr = now.toLocaleTimeString();
