@@ -66,7 +66,7 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 3: Minimapa + Coordenadas y Brújula -->
+            <!-- SECCIÓN 3: Minimapa (5 col) + Datos y Brújula (7 col) -->
             <div class="grid grid-cols-12 gap-3 items-center">
                 
                 <!-- Minimapa Satelital Grande -->
@@ -74,7 +74,7 @@
                     <div id="mini-map" class="w-full h-full"></div>
                 </div>
 
-                <!-- Bloque Derecho: Coordenadas, Brújula y Notas -->
+                <!-- Bloque Derecho -->
                 <div class="col-span-7 flex flex-col space-y-2.5">
                     
                     <!-- Coordenadas y Altitud -->
@@ -231,7 +231,7 @@
     <!-- Script de Funcionalidad -->
     <script>
         let videoStream = null;
-        let currentLat = 0.0, currentLon = 0.0, currentAlt = 0.0, currentAccuracy = 5.0;
+        let currentLat = 15.5378, currentLon = -87.7063, currentAlt = 0.0, currentAccuracy = 5.0;
         let currentHeadingDegrees = 0, currentCardinal = 'N';
         let currentAddress = 'Calculando ubicación...';
         let currentGMTOffset = '';
@@ -246,7 +246,7 @@
             initCamera();
             initGeolocation();
             initCompass();
-            initMiniMap(15.5378, -87.7063);
+            initMiniMap(currentLat, currentLon);
             calculateTimeZone();
             setInterval(updateClock, 1000);
             updateClock();
@@ -268,7 +268,6 @@
             const now = new Date();
             document.getElementById('hud-time').innerText = now.toLocaleTimeString();
             
-            // Fecha en letras (ej: Lunes, 19 de Octubre de 2026)
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             const dateLetterStr = now.toLocaleDateString('es-ES', options);
             document.getElementById('hud-date-text').innerText = dateLetterStr.charAt(0).toUpperCase() + dateLetterStr.slice(1);
@@ -382,7 +381,7 @@
             document.getElementById('logo-container').innerText = comp.substring(0, 2).toUpperCase();
         }
 
-        function capturePhoto() {
+        async function capturePhoto() {
             const video = document.getElementById('camera-feed');
             const canvas = document.getElementById('snapshot-canvas');
             canvas.width = video.videoWidth || 1920;
@@ -395,8 +394,9 @@
             const boxWidth = canvas.width - (margin * 2);
             const boxX = margin;
 
+            const showMap = document.getElementById('toggle-map').checked;
             const showCompass = document.getElementById('toggle-compass').checked;
-            const boxHeight = showCompass ? 360 : 280;
+            const boxHeight = 420;
             const boxY = canvas.height - boxHeight - margin;
             const cornerRadius = 35;
 
@@ -451,73 +451,127 @@
                 currentY += 55;
             }
 
+            // 2. Minimapa Satelital Estático Estampado en la Foto
+            let rightContentX = boxX + 40;
+            let rightContentWidth = boxWidth - 80;
+
+            if (showMap) {
+                const mapImgSize = 210;
+                const mapX = boxX + 40;
+                const mapY = boxY + currentY;
+
+                try {
+                    const tileZ = 17;
+                    const xTile = Math.floor((currentLon + 180) / 360 * Math.pow(2, tileZ));
+                    const yTile = Math.floor((1 - Math.log(Math.tan(currentLat * Math.PI / 180) + 1 / Math.cos(currentLat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, tileZ));
+                    const subdomains = ['mt0', 'mt1', 'mt2', 'mt3'];
+                    const sub = subdomains[Math.abs(Math.sin(currentLat + currentLon)) * 4 | 0];
+                    const tileUrl = `https://${sub}.google.com/vt/lyrs=s,h&x=${xTile}&y=${yTile}&z=${tileZ}`;
+
+                    const mapImg = await new Promise((resolve) => {
+                        const img = new Image();
+                        img.crossOrigin = 'anonymous';
+                        img.onload = () => resolve(img);
+                        img.onerror = () => resolve(null);
+                        img.src = tileUrl;
+                    });
+
+                    if (mapImg) {
+                        ctx.save();
+                        ctx.beginPath();
+                        if (ctx.roundRect) {
+                            ctx.roundRect(mapX, mapY, mapImgSize, mapImgSize, 20);
+                        } else {
+                            ctx.rect(mapX, mapY, mapImgSize, mapImgSize);
+                        }
+                        ctx.clip();
+                        ctx.drawImage(mapImg, mapX, mapY, mapImgSize, mapImgSize);
+
+                        // Marcador azul en el centro del minimapa estampado
+                        ctx.beginPath();
+                        ctx.arc(mapX + mapImgSize / 2, mapY + mapImgSize / 2, 9, 0, 2 * Math.PI);
+                        ctx.fillStyle = '#3b82f6';
+                        ctx.fill();
+                        ctx.lineWidth = 3;
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.stroke();
+                        ctx.restore();
+
+                        ctx.lineWidth = 2;
+                        ctx.strokeStyle = '#3b82f6';
+                        ctx.strokeRect(mapX, mapY, mapImgSize, mapImgSize);
+                    }
+                } catch(e) {}
+
+                rightContentX = mapX + mapImgSize + 30;
+                rightContentWidth = boxWidth - (rightContentX - boxX) - 40;
+            }
+
+            // 3. Coordenadas y Brújula al lado del Minimapa
+            let detailY = currentY + 15;
             if (document.getElementById('toggle-coords').checked) {
                 ctx.textAlign = 'left';
-                ctx.font = '24px monospace';
+                ctx.font = '22px monospace';
                 ctx.fillStyle = '#F8FAFC';
-                ctx.fillText(`GPS: ${currentLat.toFixed(5)}, ${currentLon.toFixed(5)} | Alt: ${Math.round(currentAlt)}m`, boxX + 40, boxY + currentY);
+                ctx.fillText(`GPS: ${currentLat.toFixed(5)}, ${currentLon.toFixed(5)}`, rightContentX, boxY + detailY);
+                detailY += 35;
+                ctx.fillText(`Altitud: ${Math.round(currentAlt)}m  |  ±${Math.round(currentAccuracy)}m`, rightContentX, boxY + detailY);
+                detailY += 45;
             }
-            if (showCompass) {
-                ctx.textAlign = 'right';
-                ctx.fillStyle = '#FBBF24';
-                ctx.font = 'bold 26px monospace';
-                ctx.fillText(`Rumbo: ${currentCardinal} (${currentHeadingDegrees}°)`, boxX + boxWidth - 40, boxY + currentY);
-            }
-            currentY += 50;
 
-            // Brújula Gráfica dentro de la foto
             if (showCompass) {
-                const compassX = boxX + 70;
-                const compassY = boxY + currentY + 15;
-                const radius = 32;
+                ctx.font = 'bold 24px monospace';
+                ctx.fillStyle = '#FBBF24';
+                ctx.fillText(`Rumbo: ${currentCardinal} (${currentHeadingDegrees}°)`, rightContentX, boxY + detailY);
+                detailY += 40;
+
+                // Brújula Gráfica pequeña al lado
+                const compassX = rightContentX + 35;
+                const compassY = boxY + detailY + 20;
+                const radius = 28;
 
                 ctx.save();
                 ctx.beginPath();
                 ctx.arc(compassX, compassY, radius, 0, 2 * Math.PI);
                 ctx.fillStyle = 'rgba(30, 41, 59, 0.9)';
                 ctx.fill();
-                ctx.lineWidth = 3;
+                ctx.lineWidth = 2;
                 ctx.strokeStyle = '#475569';
                 ctx.stroke();
 
                 ctx.fillStyle = '#EF4444';
-                ctx.font = 'bold 15px sans-serif';
+                ctx.font = 'bold 13px sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText('N', compassX, compassY - radius + 13);
-
-                ctx.fillStyle = '#94A3B8';
-                ctx.font = '13px sans-serif';
-                ctx.fillText('S', compassX, compassY + radius - 3);
-                ctx.fillText('E', compassX + radius - 9, compassY + 5);
-                ctx.fillText('O', compassX - radius + 9, compassY + 5);
+                ctx.fillText('N', compassX, compassY - radius + 11);
 
                 ctx.translate(compassX, compassY);
                 ctx.rotate((currentHeadingDegrees * Math.PI) / 180);
 
                 ctx.beginPath();
-                ctx.moveTo(0, -20);
-                ctx.lineTo(5, 0);
-                ctx.lineTo(0, 12);
+                ctx.moveTo(0, -18);
+                ctx.lineTo(4, 0);
+                ctx.lineTo(0, 10);
                 ctx.fillStyle = '#EF4444';
                 ctx.fill();
 
                 ctx.beginPath();
-                ctx.moveTo(0, 20);
-                ctx.lineTo(-5, 0);
-                ctx.lineTo(0, 12);
+                ctx.moveTo(0, 18);
+                ctx.lineTo(-4, 0);
+                ctx.lineTo(0, 10);
                 ctx.fillStyle = '#94A3B8';
                 ctx.fill();
 
                 ctx.restore();
 
                 ctx.textAlign = 'left';
-                ctx.font = 'bold 24px monospace';
-                ctx.fillStyle = '#FBBF24';
-                ctx.fillText(`Brújula Activa: ${currentCardinal} (${currentHeadingDegrees}°)`, compassX + 55, compassY + 8);
-                currentY += 75;
+                ctx.font = 'bold 20px monospace';
+                ctx.fillStyle = '#CBD5E1';
+                ctx.fillText(`Brújula Activa`, compassX + 45, compassY + 7);
             }
 
-            // Nota final dentro de la caja con margen seguro
+            currentY += 240;
+
+            // 4. Nota final dentro de la caja con margen seguro
             ctx.textAlign = 'left';
             ctx.font = 'italic 22px sans-serif';
             ctx.fillStyle = '#CBD5E1';
