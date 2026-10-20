@@ -34,9 +34,27 @@
         <video id="camera-feed" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover"></video>
         <canvas id="snapshot-canvas" class="hidden"></canvas>
 
-        <!-- Minimapa Arriba (Flotante sin barra negra) -->
+        <!-- Minimapa Arriba a la Izquierda -->
         <div id="box-map" class="absolute top-4 left-4 w-52 h-52 rounded-2xl overflow-hidden border-2 border-blue-500 shadow-2xl bg-slate-950 pointer-events-none z-10">
             <div id="mini-map" class="w-full h-full"></div>
+        </div>
+
+        <!-- Rosa Náutica Arriba a la Derecha (Mismo tamaño del minimapa) -->
+        <div id="box-compass-widget" class="absolute top-4 right-4 w-52 h-52 rounded-2xl overflow-hidden border-2 border-amber-500 shadow-2xl bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center p-3 pointer-events-none z-10">
+            <div class="relative w-32 h-32 flex items-center justify-center">
+                <svg id="compass-rose" class="compass-rose w-32 h-32" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="46" fill="none" stroke="#64748B" stroke-width="4" />
+                    <text x="50" y="18" fill="#EF4444" font-size="18" font-weight="bold" text-anchor="middle">N</text>
+                    <text x="50" y="92" fill="#94A3B8" font-size="14" font-weight="bold" text-anchor="middle">S</text>
+                    <text x="88" y="55" fill="#94A3B8" font-size="14" font-weight="bold" text-anchor="middle">E</text>
+                    <text x="12" y="55" fill="#94A3B8" font-size="14" font-weight="bold" text-anchor="middle">O</text>
+                    <polygon points="50,22 56,50 50,45" fill="#EF4444" />
+                    <polygon points="50,22 44,50 50,45" fill="#B91C1C" />
+                    <polygon points="50,78 56,50 50,55" fill="#94A3B8" />
+                    <polygon points="50,78 44,50 50,55" fill="#64748B" />
+                </svg>
+            </div>
+            <span id="hud-heading-cardinal" class="text-sm font-black text-amber-400 mt-2">N (0°)</span>
         </div>
 
         <!-- RECUADRO INFERIOR COMPACTO (Con Logo Gigante a la Derecha) -->
@@ -66,17 +84,12 @@
                 </div>
             </div>
 
-            <!-- Coordenadas, Rumbo y Logo Gigante -->
+            <!-- Coordenadas y Logo Gigante -->
             <div class="grid grid-cols-12 gap-2 items-center">
                 <div class="col-span-9 flex flex-col space-y-1.5">
                     <div id="box-coords" class="bg-slate-800/85 px-2.5 py-1.5 rounded-xl border border-slate-700/80 flex items-center justify-between font-mono text-[11px] text-slate-100 font-bold shadow">
                         <span class="truncate" id="hud-coords">Lat: 0.0000, Lon: 0.0000</span>
                         <span id="hud-altitude" class="text-blue-400 ml-2">Alt: 0m (±5m)</span>
-                    </div>
-
-                    <div id="box-compass" class="bg-slate-800/85 px-2.5 py-1.5 rounded-xl border border-slate-700/80 flex items-center justify-between shadow text-[11px]">
-                        <span class="font-bold text-slate-300">Rumbo:</span>
-                        <span id="hud-heading-cardinal" class="font-black text-amber-400">N (0°)</span>
                     </div>
 
                     <!-- Notas compactas -->
@@ -166,7 +179,7 @@
                             <input type="checkbox" id="toggle-coords" checked onchange="toggleHudElements()" class="w-5 h-5 accent-blue-600">
                         </label>
                         <label class="flex items-center justify-between p-3 bg-slate-800/85 rounded-xl cursor-pointer">
-                            <span class="font-medium">🧭 Rumbo</span>
+                            <span class="font-medium">🧭 Rosa Náutica</span>
                             <input type="checkbox" id="toggle-compass" checked onchange="toggleHudElements()" class="w-5 h-5 accent-blue-600">
                         </label>
                     </div>
@@ -330,6 +343,9 @@
                         currentHeadingDegrees = Math.round(e.alpha);
                         const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
                         currentCardinal = dirs[Math.round(currentHeadingDegrees / 45) % 8];
+
+                        const rose = document.getElementById('compass-rose');
+                        if (rose) rose.style.transform = `rotate(${-currentHeadingDegrees}deg)`;
                         document.getElementById('hud-heading-cardinal').innerText = `${currentCardinal} (${currentHeadingDegrees}°)`;
                     }
                 });
@@ -357,7 +373,7 @@
             document.getElementById('box-weather').style.display = document.getElementById('toggle-weather').checked ? 'flex' : 'none';
             document.getElementById('box-map').style.display = document.getElementById('toggle-map').checked ? 'block' : 'none';
             document.getElementById('box-coords').style.display = document.getElementById('toggle-coords').checked ? 'flex' : 'none';
-            document.getElementById('box-compass').style.display = document.getElementById('toggle-compass').checked ? 'flex' : 'none';
+            document.getElementById('box-compass-widget').style.display = document.getElementById('toggle-compass').checked ? 'flex' : 'none';
         }
 
         function toggleSettings() { document.getElementById('settings-modal').classList.toggle('hidden'); }
@@ -386,7 +402,7 @@
             const boxWidth = canvas.width - (margin * 2);
             const cornerRadius = 30;
 
-            // ================= 2. MINIMAPA SUPERIOR GRANDE EN CANVAS =================
+            // ================= 2. MINIMAPA SUPERIOR IZQUIERDA EN CANVAS =================
             const showMap = document.getElementById('toggle-map').checked;
             if (showMap) {
                 const mapSize = 320;
@@ -436,7 +452,79 @@
                 } catch(e) {}
             }
 
-            // ================= 3. RECUADRO INFERIOR COMPACTO EN CANVAS =================
+            // ================= 3. ROSA NÁUTICA SUPERIOR DERECHA EN CANVAS =================
+            const showCompass = document.getElementById('toggle-compass').checked;
+            if (showCompass) {
+                const compSize = 320;
+                const compX = canvas.width - margin - compSize;
+                const compY = margin;
+
+                ctx.save();
+                ctx.beginPath();
+                if (ctx.roundRect) {
+                    ctx.roundRect(compX, compY, compSize, compSize, 24);
+                } else {
+                    ctx.rect(compX, compY, compSize, compSize);
+                }
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+                ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#f59e0b';
+                ctx.stroke();
+                ctx.clip();
+
+                // Dibujar círculo de la brújula y marcas
+                const cx = compX + compSize / 2;
+                const cy = compY + compSize / 2 - 20;
+                const radius = 95;
+
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+                ctx.lineWidth = 6;
+                ctx.strokeStyle = '#64748B';
+                ctx.stroke();
+
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate((currentHeadingDegrees * Math.PI) / 180);
+
+                // Aguja Norte (Rojo)
+                ctx.beginPath();
+                ctx.moveTo(0, -75);
+                ctx.lineTo(16, 0);
+                ctx.lineTo(0, 45);
+                ctx.fillStyle = '#EF4444';
+                ctx.fill();
+
+                // Aguja Sur (Gris)
+                ctx.beginPath();
+                ctx.moveTo(0, 75);
+                ctx.lineTo(-16, 0);
+                ctx.lineTo(0, 45);
+                ctx.fillStyle = '#94A3B8';
+                ctx.fill();
+                ctx.restore();
+
+                // Textos N, S, E, O
+                ctx.font = 'bold 28px sans-serif';
+                ctx.fillStyle = '#EF4444';
+                ctx.textAlign = 'center';
+                ctx.fillText('N', cx, cy - radius + 25);
+                ctx.fillStyle = '#94A3B8';
+                ctx.fillText('S', cx, cy + radius - 8);
+                ctx.fillText('E', cx + radius - 15, cy + 10);
+                ctx.fillText('O', cx - radius + 18, cy + 10);
+
+                // Texto cardinal inferior dentro del recuadro
+                ctx.font = 'bold 26px sans-serif';
+                ctx.fillStyle = '#FBBF24';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${currentCardinal} (${currentHeadingDegrees}°)`, cx, compY + compSize - 35);
+
+                ctx.restore();
+            }
+
+            // ================= 4. RECUADRO INFERIOR EN CANVAS =================
             const bottomBoxHeight = 280;
             const bottomBoxY = canvas.height - bottomBoxHeight - margin;
 
@@ -491,19 +579,12 @@
             }
             currentY += 45;
 
-            // Coordenadas y Rumbo
+            // Coordenadas
             if (document.getElementById('toggle-coords').checked) {
                 ctx.textAlign = 'left';
                 ctx.font = '20px monospace';
                 ctx.fillStyle = '#F8FAFC';
                 ctx.fillText(`GPS: ${currentLat.toFixed(5)}, ${currentLon.toFixed(5)}  |  Alt: ${Math.round(currentAlt)}m (±${Math.round(currentAccuracy)}m)`, margin + 35, bottomBoxY + currentY);
-                currentY += 40;
-            }
-
-            if (document.getElementById('toggle-compass').checked) {
-                ctx.font = 'bold 22px monospace';
-                ctx.fillStyle = '#FBBF24';
-                ctx.fillText(`Rumbo: ${currentCardinal} (${currentHeadingDegrees}°)`, margin + 35, bottomBoxY + currentY);
             }
 
             // Nota del Inspector
@@ -512,7 +593,7 @@
             ctx.fillText(`Nota: ${document.getElementById('input-notes').value}`, margin + 35, bottomBoxY + bottomBoxHeight - 20);
 
             // ================= LOGOTIPO GIGANTE A LA DERECHA =================
-            const logoSize = 130; // Logotipo grande y destacado
+            const logoSize = 130;
             const logoX = margin + boxWidth - logoSize - 35;
             const logoY = bottomBoxY + bottomBoxHeight - logoSize - 25;
 
