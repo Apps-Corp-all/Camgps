@@ -396,7 +396,7 @@
 
             const showMap = document.getElementById('toggle-map').checked;
             const showCompass = document.getElementById('toggle-compass').checked;
-            const boxHeight = 440;
+            const boxHeight = 455;
             const boxY = canvas.height - boxHeight - margin;
             const cornerRadius = 35;
 
@@ -453,13 +453,14 @@
                 currentY += 65;
             }
 
-            // 3. Distribución en 2 Columnas Perfectas
+            // 3. Distribución en 2 Columnas Sincronizadas
             let leftColX = boxX + 45;
-            let rightColX = boxX + 285; // Columna derecha alineada perfectamente
+            let rightColX = boxX + 265; // Columna derecha perfectamente alineada al mismo nivel superior del mapa
+            let contentStartY = currentY;
 
             if (showMap) {
                 const mapSize = 190;
-                const mapY = boxY + currentY;
+                const mapY = boxY + contentStartY;
 
                 try {
                     const tileZ = 17;
@@ -505,16 +506,16 @@
                 } catch(e) {}
             }
 
-            // Columna Derecha (Coordenadas, Altitud y Brújula perfectamente apiladas)
-            let colY = currentY + 15;
+            // Columna Derecha (Alineada exactamente a la misma altura inicial del mapa)
+            let colY = contentStartY + 25;
             if (document.getElementById('toggle-coords').checked) {
                 ctx.textAlign = 'left';
                 ctx.font = '22px monospace';
                 ctx.fillStyle = '#F8FAFC';
                 ctx.fillText(`GPS: ${currentLat.toFixed(5)}, ${currentLon.toFixed(5)}`, rightColX, boxY + colY);
-                colY += 35;
+                colY += 38;
                 ctx.fillText(`Altitud: ${Math.round(currentAlt)}m  |  ±${Math.round(currentAccuracy)}m`, rightColX, boxY + colY);
-                colY += 45;
+                colY += 48;
             }
 
             if (showCompass) {
@@ -525,8 +526,8 @@
 
                 // Rosa Náutica pequeña simétrica
                 const compX = rightColX + 35;
-                const compY = boxY + colY + 15;
-                const radius = 26;
+                const compY = boxY + colY + 12;
+                const radius = 24;
 
                 ctx.save();
                 ctx.beginPath();
@@ -538,24 +539,24 @@
                 ctx.stroke();
 
                 ctx.fillStyle = '#EF4444';
-                ctx.font = 'bold 13px sans-serif';
+                ctx.font = 'bold 12px sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText('N', compX, compY - radius + 11);
+                ctx.fillText('N', compX, compY - radius + 10);
 
                 ctx.translate(compX, compY);
                 ctx.rotate((currentHeadingDegrees * Math.PI) / 180);
 
                 ctx.beginPath();
-                ctx.moveTo(0, -16);
+                ctx.moveTo(0, -14);
                 ctx.lineTo(4, 0);
-                ctx.lineTo(0, 10);
+                ctx.lineTo(0, 9);
                 ctx.fillStyle = '#EF4444';
                 ctx.fill();
 
                 ctx.beginPath();
-                ctx.moveTo(0, 16);
+                ctx.moveTo(0, 14);
                 ctx.lineTo(-4, 0);
-                ctx.lineTo(0, 10);
+                ctx.lineTo(0, 9);
                 ctx.fillStyle = '#94A3B8';
                 ctx.fill();
 
@@ -564,10 +565,10 @@
                 ctx.textAlign = 'left';
                 ctx.font = 'bold 20px monospace';
                 ctx.fillStyle = '#CBD5E1';
-                ctx.fillText(`Brújula Activa`, compX + 45, compY + 7);
+                ctx.fillText(`Brújula Activa`, compX + 42, compY + 7);
             }
 
-            // 4. Notas en la parte inferior de la caja
+            // 4. Notas fijas al pie de la caja con margen seguro
             ctx.textAlign = 'left';
             ctx.font = 'italic 22px sans-serif';
             ctx.fillStyle = '#CBD5E1';
