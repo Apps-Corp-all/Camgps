@@ -57,7 +57,7 @@
             <span id="hud-heading-cardinal" class="text-sm font-black text-amber-400 mt-2">N (0°)</span>
         </div>
 
-        <!-- RECUADRO INFERIOR COMPACTO (Con Logo Gigante a la Derecha) -->
+        <!-- RECUADRO INFERIOR (Con Dirección, Coordenadas y Logo Gigante) -->
         <div class="absolute inset-x-3 bottom-3 bg-slate-900/85 backdrop-blur-xl border-2 border-slate-700/80 rounded-3xl p-3.5 shadow-[0_15px_40px_rgba(0,0,0,0.85)] flex flex-col space-y-2 pointer-events-none z-10">
             
             <!-- Empresa, Fecha en Letras y Hora -->
@@ -72,7 +72,7 @@
                 </div>
             </div>
 
-            <!-- Dirección y Clima -->
+            <!-- Dirección y Clima (Sin departamentos) -->
             <div class="grid grid-cols-12 gap-2 text-xs">
                 <div id="box-address" class="col-span-8 flex items-center space-x-1.5 bg-slate-800/85 px-3 py-1.5 rounded-xl border border-slate-700/80 truncate shadow">
                     <i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-400 shrink-0"></i>
@@ -84,7 +84,7 @@
                 </div>
             </div>
 
-            <!-- Coordenadas y Logo Gigante -->
+            <!-- Coordenadas, Notas y Logo Gigante -->
             <div class="grid grid-cols-12 gap-2 items-center">
                 <div class="col-span-9 flex flex-col space-y-1.5">
                     <div id="box-coords" class="bg-slate-800/85 px-2.5 py-1.5 rounded-xl border border-slate-700/80 flex items-center justify-between font-mono text-[11px] text-slate-100 font-bold shadow">
@@ -163,7 +163,7 @@
                     <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Elementos visibles en pantalla</h4>
                     <div class="space-y-2">
                         <label class="flex items-center justify-between p-3 bg-slate-800/85 rounded-xl cursor-pointer">
-                            <span class="font-medium">📍 Dirección / Sitio</span>
+                            <span class="font-medium">📍 Dirección (Barrio/Colonia/Ciudad)</span>
                             <input type="checkbox" id="toggle-address" checked onchange="toggleHudElements()" class="w-5 h-5 accent-blue-600">
                         </label>
                         <label class="flex items-center justify-between p-3 bg-slate-800/85 rounded-xl cursor-pointer">
@@ -325,9 +325,17 @@
             try {
                 const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`);
                 const data = await response.json();
-                if (data && data.display_name) {
-                    const parts = data.display_name.split(',');
-                    currentAddress = `${parts[0]}, ${parts[1] || ''}`.trim();
+                if (data && data.address) {
+                    const addr = data.address;
+                    // Extraer únicamente barrio/colonia, vecindario, pueblo o ciudad (excluyendo departamento/estado y país)
+                    const subLocality = addr.suburb || addr.neighbourhood || addr.residential || addr.hamlet || '';
+                    const locality = addr.city || addr.town || addr.village || addr.municipality || '';
+                    
+                    let parts = [];
+                    if (subLocality) parts.push(subLocality);
+                    if (locality && locality !== subLocality) parts.push(locality);
+
+                    currentAddress = parts.length > 0 ? parts.join(', ') : (data.display_name.split(',')[0] || 'Ubicación actual');
                     document.getElementById('hud-address').innerText = currentAddress;
                 }
             } catch (e) {
@@ -473,7 +481,6 @@
                 ctx.stroke();
                 ctx.clip();
 
-                // Dibujar círculo de la brújula y marcas
                 const cx = compX + compSize / 2;
                 const cy = compY + compSize / 2 - 20;
                 const radius = 95;
@@ -488,7 +495,6 @@
                 ctx.translate(cx, cy);
                 ctx.rotate((currentHeadingDegrees * Math.PI) / 180);
 
-                // Aguja Norte (Rojo)
                 ctx.beginPath();
                 ctx.moveTo(0, -75);
                 ctx.lineTo(16, 0);
@@ -496,7 +502,6 @@
                 ctx.fillStyle = '#EF4444';
                 ctx.fill();
 
-                // Aguja Sur (Gris)
                 ctx.beginPath();
                 ctx.moveTo(0, 75);
                 ctx.lineTo(-16, 0);
@@ -505,7 +510,6 @@
                 ctx.fill();
                 ctx.restore();
 
-                // Textos N, S, E, O
                 ctx.font = 'bold 28px sans-serif';
                 ctx.fillStyle = '#EF4444';
                 ctx.textAlign = 'center';
@@ -515,7 +519,6 @@
                 ctx.fillText('E', cx + radius - 15, cy + 10);
                 ctx.fillText('O', cx - radius + 18, cy + 10);
 
-                // Texto cardinal inferior dentro del recuadro
                 ctx.font = 'bold 26px sans-serif';
                 ctx.fillStyle = '#FBBF24';
                 ctx.textAlign = 'center';
@@ -524,8 +527,8 @@
                 ctx.restore();
             }
 
-            // ================= 4. RECUADRO INFERIOR EN CANVAS =================
-            const bottomBoxHeight = 280;
+            // ================= 4. RECUADRO INFERIOR EN CANVAS (CON DIRECCIÓN Y LOGO) =================
+            const bottomBoxHeight = 310;
             const bottomBoxY = canvas.height - bottomBoxHeight - margin;
 
             ctx.save();
@@ -564,7 +567,7 @@
 
             let currentY = 105;
 
-            // Dirección y Clima
+            // Dirección (Barrio/Colonia/Ciudad sin departamento)
             if (document.getElementById('toggle-address').checked) {
                 ctx.textAlign = 'left';
                 ctx.font = 'bold 22px sans-serif';
@@ -585,6 +588,7 @@
                 ctx.font = '20px monospace';
                 ctx.fillStyle = '#F8FAFC';
                 ctx.fillText(`GPS: ${currentLat.toFixed(5)}, ${currentLon.toFixed(5)}  |  Alt: ${Math.round(currentAlt)}m (±${Math.round(currentAccuracy)}m)`, margin + 35, bottomBoxY + currentY);
+                currentY += 45;
             }
 
             // Nota del Inspector
