@@ -22,9 +22,36 @@
     <style>
         .compass-rose { transition: transform 0.15s ease-out; }
         .leaflet-control-container { display: none !important; }
+
+#toast-notification {
+    visibility: hidden;
+    min-width: 250px;
+    background-color: rgba(33, 33, 33, 0.9);
+    color: #fff;
+    text-align: center;
+    border-radius: 8px;
+    padding: 12px;
+    position: fixed;
+    z-index: 9999;
+    left: 50%;
+    bottom: 30px;
+    transform: translateX(-50%);
+    font-size: 14px;
+    box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
+    transition: visibility 0.3s, opacity 0.3s ease-in-out;
+    opacity: 0;
+}
+
+#toast-notification.show {
+    visibility: visible;
+    opacity: 1;
+}
+
+        
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans select-none overflow-x-hidden">
+<div id="toast-notification">¡Foto guardada con éxito en la galería!</div>
 
     <!-- Header Superior -->
     <header class="w-full bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-4 py-3.5 flex justify-between items-center z-20 shadow-lg">
@@ -786,6 +813,7 @@
             a.href = item.url;
             a.download = `Captura_GPS_${item.id}.${item.type === 'image' ? 'jpg' : 'webm'}`;
             a.click();
+            mostrarToast();
         }
 
         function deleteCurrentMedia() {
@@ -793,6 +821,15 @@
             closeViewer();
             updateGalleryUI();
         }
+
+        function mostrarToast() {
+    var toast = document.getElementById("toast-notification");
+    toast.className = "show";
+    setTimeout(function() {
+        toast.className = toast.className.replace("show", "");
+    }, 3000);
+}
+
     </script>
 </body>
 </html>
