@@ -1,6 +1,6 @@
 {
-  "name": "Cámara Corporativa GPS Pro",
-  "short_name": "GPS Cam Pro",
+  "name": "Apps-Corp-All - GPS Cam Pro",
+  "short_name": "Apps-Corp-All",
   "description": "Aplicación profesional de cámara con geolocalización satelital, minimapa y rosa náutica.",
   "start_url": "./index.html",
   "scope": "./",
