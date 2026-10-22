@@ -1,8 +1,12 @@
-[{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "io.github.oscarrodriguez763v1_cmd.twa",
-        "sha256_cert_fingerprints": ["1E:CA:E3:F2:07:A9:D1:77:6C:A7:9F:87:73:9D:F7:41:EA:51:06:7A:B2:98:E9:6D:87:54:48:43:07:54:48:01"]
-      }
-    }]
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.github.oscarrodriguez763_cmd.twa",
+      "sha256_cert_fingerprints": [
+        "56:C3:E1:50:49:11:69:40:B0:95:F3:E2:E8:44:D9:8A:36:96:02:81:4A:A9:C6:B0:DF:D5:E8:DA:B3:D9:AE:09"
+      ]
+    }
+  }
+]
