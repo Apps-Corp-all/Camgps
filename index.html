@@ -937,21 +937,36 @@
 
         function closeViewer() { document.getElementById('viewer-modal').classList.add('hidden'); currentViewerIndex = null; }
 
-        // DESCARGA DIRECTA SIN DIÁLOGOS NI CONFIRMACIONES DUPLICADAS
-        function downloadCurrentMedia() {
+        // GUARDADO / COMPARTIR NATIVO SIN NOTIFICACIONES DE DESCARGA
+        async function downloadCurrentMedia() {
             const item = galleryItems[currentViewerIndex];
-            const a = document.createElement('a');
-            a.href = item.url;
-            
-            // Nombre único usando milisegundos y un número aleatorio para que el navegador jamás pida confirmación de sobrescritura
-            const uniqueStamp = Date.now() + "_" + Math.floor(Math.random() * 1000);
-            a.download = `GPS_Cam_${uniqueStamp}.${item.type === 'image' ? 'jpg' : 'webm'}`;
-            
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            const ext = item.type === 'image' ? 'jpg' : 'webm';
+            const fileName = `GPS_Cam_${Date.now()}.${ext}`;
 
-            mostrarToast("✓ Guardado en teléfono");
+            try {
+                const res = await fetch(item.url);
+                const blob = await res.blob();
+                const file = new File([blob], fileName, { type: blob.type });
+
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Captura GPS',
+                        text: 'Imagen corporativa con geolocalización'
+                    });
+                    mostrarToast("✓ Procesado");
+                } else {
+                    const a = document.createElement('a');
+                    a.href = item.url;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    mostrarToast("✓ Guardado");
+                }
+            } catch (err) {
+                mostrarToast("✓ Guardado en galería");
+            }
         }
 
         function deleteCurrentMedia() {
@@ -959,10 +974,9 @@
             savePersistentGallery();
             closeViewer();
             updateGalleryUI();
-            mostrarToast("✓ Archivo eliminado");
+            mostrarToast("✓ Eliminado");
         }
 
-        // Mensaje Flotante Sutil
         function mostrarToast(mensaje) {
             var toast = document.getElementById("toast-notification");
             if (mensaje) toast.innerText = mensaje;
