@@ -282,4 +282,641 @@
         });
 
         async function switchCamera() {
-            currentFacingMode
+            currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+            }
+            await initCamera();
+            mostrarToast(currentFacingMode === 'user' ? "📷 Cámara Frontal" : "📷 Cámara Trasera");
+        }
+
+        async function initCamera() {
+            try {
+                const videoConstraints = currentFacingMode === 'user' 
+                    ? { facingMode: 'user' } 
+                    : { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } };
+
+                videoStream = await navigator.mediaDevices.getUserMedia({
+                    video: videoConstraints,
+                    audio: true
+                });
+                document.getElementById('camera-feed').srcObject = videoStream;
+            } catch (err) {}
+        }
+
+        function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((reg) => { console.log('Service Worker registrado:', reg.scope); })
+                    .catch((err) => { console.log('Error SW:', err); });
+            }
+        }
+
+        function encodePlusCode(lat, lon) {
+            const CODE_ALPHABET = "23456789CFGHJMPQRVWX";
+            lat = Math.min(Math.max(lat, -90), 90);
+            lon = ((lon + 180) % 360 + 360) % 360 - 180;
+
+            let latVal = Math.floor((lat + 90) * 8000);
+            let lonVal = Math.floor((lon + 180) * 8000);
+
+            let code = "";
+            let latDivs = [20 * 8000, 8000, 400, 20];
+            let lonDivs = [20 * 8000, 8000, 400, 20];
+
+            for (let i = 0; i < 4; i++) {
+                let digitLat = Math.floor(latVal / latDivs[i]);
+                let digitLon = Math.floor(lonVal / lonDivs[i]);
+                latVal %= latDivs[i];
+                lonVal %= lonDivs[i];
+                code += CODE_ALPHABET[digitLat] + CODE_ALPHABET[digitLon];
+                if (i === 1) code += "+";
+            }
+            return code;
+        }
+
+        function loadSavedSettings() {
+            if (localStorage.getItem('gps_company')) {
+                document.getElementById('input-company').value = localStorage.getItem('gps_company');
+            }
+            if (localStorage.getItem('gps_project')) {
+                document.getElementById('input-project').value = localStorage.getItem('gps_project');
+            }
+            if (localStorage.getItem('gps_notes')) {
+                document.getElementById('input-notes').value = localStorage.getItem('gps_notes');
+            }
+            if (localStorage.getItem('gps_logo')) {
+                customLogoImage = new Image();
+                customLogoImage.onload = function() {
+                    document.getElementById('logo-container').innerHTML = `<img src="${localStorage.getItem('gps_logo')}" class="w-full h-full object-cover">`;
+                };
+                customLogoImage.src = localStorage.getItem('gps_logo');
+            }
+
+            if (localStorage.getItem('gps_size_map')) {
+                document.getElementById('slider-map-size').value = localStorage.getItem('gps_size_map');
+            }
+            if (localStorage.getItem('gps_size_compass')) {
+                document.getElementById('slider-compass-size').value = localStorage.getItem('gps_size_compass');
+            }
+            if (localStorage.getItem('gps_scale_panel')) {
+                document.getElementById('slider-panel-scale').value = localStorage.getItem('gps_scale_panel');
+            }
+
+            const toggles = ['address', 'weather', 'map', 'coords', 'compass'];
+            toggles.forEach(t => {
+                const val = localStorage.getItem(`gps_toggle_${t}`);
+                if (val !== null) {
+                    const isChecked = val === 'true';
+                    document.getElementById(`toggle-${t}`).checked = isChecked;
+                }
+            });
+
+            updateSettings();
+            toggleHudElements();
+            updateElementSizes();
+        }
+
+        function updateElementSizes() {
+            const mapSize = document.getElementById('slider-map-size').value;
+            const compassSize = document.getElementById('slider-compass-size').value;
+            const panelScale = document.getElementById('slider-panel-scale').value;
+
+            localStorage.setItem('gps_size_map', mapSize);
+            localStorage.setItem('gps_size_compass', compassSize);
+            localStorage.setItem('gps_scale_panel', panelScale);
+
+            document.getElementById('val-map-size').innerText = `${mapSize}px`;
+            document.getElementById('val-compass-size').innerText = `${compassSize}px`;
+            document.getElementById('val-panel-scale').innerText = `${panelScale}%`;
+
+            const mapBox = document.getElementById('box-map');
+            mapBox.style.width = `${mapSize}px`;
+            mapBox.style.height = `${mapSize}px`;
+            if (map) map.invalidateSize();
+
+            const compassBox = document.getElementById('box-compass-widget');
+            compassBox.style.width = `${compassSize}px`;
+            compassBox.style.height = `${compassSize}px`;
+
+            const infoPanel = document.getElementById('box-info-panel');
+            infoPanel.style.transform = `scale(${panelScale / 100})`;
+        }
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('hud-time').innerText = now.toLocaleTimeString();
+            
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const dateLetterStr = now.toLocaleDateString('es-ES', options);
+            document.getElementById('hud-date-text').innerText = dateLetterStr.charAt(0).toUpperCase() + dateLetterStr.slice(1);
+        }
+
+        function calculateTimeZone() {
+            const offset = -new Date().getTimezoneOffset();
+            const sign = offset >= 0 ? '+' : '-';
+            const hours = Math.floor(Math.abs(offset) / 60).toString().padStart(2, '0');
+            currentGMTOffset = `GMT${sign}${hours}:00`;
+            document.getElementById('hud-timezone').innerText = currentGMTOffset;
+        }
+
+        function initMiniMap(lat, lon) {
+            if (!map) {
+                map = L.map('mini-map', {
+                    zoomControl: false,
+                    attributionControl: false,
+                    dragging: false,
+                    scrollWheelZoom: false
+                }).setView([lat, lon], 15);
+
+                L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    crossOrigin: true
+                }).addTo(map);
+
+                marker = L.circleMarker([lat, lon], {
+                    radius: 7,
+                    color: '#ffffff',
+                    fillColor: '#3b82f6',
+                    fillOpacity: 1,
+                    weight: 2
+                }).addTo(map);
+            } else {
+                map.setView([lat, lon], 15);
+                marker.setLatLng([lat, lon]);
+            }
+            preloadMapTile(lat, lon);
+        }
+
+        function preloadMapTile(lat, lon) {
+            const zoom = 15;
+            const tileUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lon}&zoom=${zoom}&size=250x250&maptype=mapnik`;
+            
+            const tempImg = new Image();
+            tempImg.crossOrigin = 'anonymous';
+            tempImg.onload = function() {
+                mapTileImage = tempImg;
+            };
+            tempImg.src = tileUrl;
+        }
+
+        function initGeolocation() {
+            if ('geolocation' in navigator) {
+                navigator.geolocation.getCurrentPosition((pos) => {
+                    updatePositionData(pos);
+                }, (err) => {}, { enableHighAccuracy: true, timeout: 5000, maximumAge: 5000 });
+
+                navigator.geolocation.watchPosition((pos) => {
+                    updatePositionData(pos);
+                }, (err) => {}, { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 });
+            }
+        }
+
+        function updatePositionData(pos) {
+            currentLat = pos.coords.latitude;
+            currentLon = pos.coords.longitude;
+            currentAlt = pos.coords.altitude || 0.0;
+            currentAccuracy = pos.coords.accuracy || 5.0;
+
+            document.getElementById('hud-coords').innerText = `Lat: ${currentLat.toFixed(4)}, Lon: ${currentLon.toFixed(4)}`;
+            document.getElementById('hud-altitude').innerText = `Alt: ${Math.round(currentAlt)}m (±${Math.round(currentAccuracy)}m)`;
+
+            if (map && marker) {
+                map.setView([currentLat, currentLon], 15);
+                marker.setLatLng([currentLat, currentLon]);
+            }
+            preloadMapTile(currentLat, currentLon);
+
+            const distance = getDistanceFromLatLonInMeters(lastLat, lastLon, currentLat, currentLon);
+            if (lastLat === 0 || distance > 20) {
+                lastLat = currentLat;
+                lastLon = currentLon;
+                fetchAddress(currentLat, currentLon);
+            }
+        }
+
+        function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+            const R = 6371000;
+            const dLat = (lat2 - lat1) * (Math.PI / 180);
+            const dLon = (lon2 - lon1) * (Math.PI / 180);
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+        }
+
+        async function fetchAddress(lat, lon) {
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`);
+                const data = await response.json();
+                
+                let plusCode = encodePlusCode(lat, lon);
+                let mainAddress = 'Ubicación actual';
+
+                if (data && data.address) {
+                    const addr = data.address;
+                    const subLocality = addr.suburb || addr.neighbourhood || addr.residential || addr.hamlet || addr.village || '';
+                    const locality = addr.city || addr.town || addr.county || addr.state || '';
+                    
+                    let parts = [];
+                    if (subLocality) parts.push(subLocality);
+                    if (locality && locality !== subLocality) parts.push(locality);
+
+                    mainAddress = parts.length > 0 ? parts.join(', ') : (data.display_name.split(',')[0] || 'Ubicación actual');
+                }
+
+                currentAddress = `${plusCode}, ${mainAddress}`;
+                document.getElementById('hud-address').innerText = currentAddress;
+            } catch (e) {
+                let plusCode = encodePlusCode(lat, lon);
+                currentAddress = `${plusCode}, Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`;
+                document.getElementById('hud-address').innerText = currentAddress;
+            }
+        }
+
+        function initCompass() {
+            if (window.DeviceOrientationEvent) {
+                window.addEventListener('deviceorientation', (e) => {
+                    if (e.alpha !== null) {
+                        currentHeadingDegrees = Math.round(e.alpha);
+                        const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+                        currentCardinal = dirs[Math.round(currentHeadingDegrees / 45) % 8];
+
+                        const rose = document.getElementById('compass-rose');
+                        if (rose) rose.style.transform = `rotate(${-currentHeadingDegrees}deg)`;
+                    }
+                });
+            }
+        }
+
+        function loadCustomLogo(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const base64Data = e.target.result;
+                    localStorage.setItem('gps_logo', base64Data);
+                    customLogoImage = new Image();
+                    customLogoImage.onload = function() {
+                        document.getElementById('logo-container').innerHTML = `<img src="${localStorage.getItem('gps_logo')}" class="w-full h-full object-cover">`;
+                    };
+                    customLogoImage.src = base64Data;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function toggleHudElements() {
+            const toggles = ['address', 'weather', 'map', 'coords', 'compass'];
+            toggles.forEach(t => {
+                const isChecked = document.getElementById(`toggle-${t}`).checked;
+                localStorage.setItem(`gps_toggle_${t}`, isChecked);
+            });
+
+            document.getElementById('box-address').style.display = document.getElementById('toggle-address').checked ? 'flex' : 'none';
+            document.getElementById('box-weather').style.display = document.getElementById('toggle-weather').checked ? 'flex' : 'none';
+            document.getElementById('box-map').style.display = document.getElementById('toggle-map').checked ? 'block' : 'none';
+            document.getElementById('box-coords').style.display = document.getElementById('toggle-coords').checked ? 'flex' : 'none';
+            document.getElementById('box-compass-widget').style.display = document.getElementById('toggle-compass').checked ? 'flex' : 'none';
+        }
+
+        function toggleSettings() { document.getElementById('settings-modal').classList.toggle('hidden'); }
+
+        function updateSettings() {
+            const comp = document.getElementById('input-company').value;
+            const proj = document.getElementById('input-project').value;
+            const notes = document.getElementById('input-notes').value;
+
+            localStorage.setItem('gps_company', comp);
+            localStorage.setItem('gps_project', proj);
+            localStorage.setItem('gps_notes', notes);
+
+            document.getElementById('company-name-display').innerText = comp;
+            document.getElementById('project-name-display').innerText = proj;
+            document.getElementById('hud-notes').innerText = notes;
+            if (!customLogoImage) {
+                document.getElementById('logo-text').innerText = comp.substring(0, 2).toUpperCase();
+            }
+        }
+
+        function drawRoundedCard(ctx, x, y, width, height, radius, bgColor, borderColor) {
+            ctx.save();
+            ctx.beginPath();
+            if (ctx.roundRect) {
+                ctx.roundRect(x, y, width, height, radius);
+            } else {
+                ctx.rect(x, y, width, height);
+            }
+            ctx.fillStyle = bgColor;
+            ctx.fill();
+            if (borderColor) {
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = borderColor;
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function saveOrShareBlob(blob, fileType) {
+            const ext = fileType === 'image' ? 'jpg' : 'webm';
+            const fileName = `GPS_Cam_${Date.now()}.${ext}`;
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
+
+            mostrarToast("✓ Guardado en Galería");
+        }
+
+        // DIBUJO SÍNCRONO DEL HUD CON MINIMAPA
+        function drawHudOnCanvas(ctx, width, height) {
+            const scale = width / 1080;
+            const margin = 24 * scale;
+            const boxWidth = width - (margin * 2);
+
+            // 1. DIBUJAR MINIMAPA
+            const showMap = document.getElementById('toggle-map').checked;
+            if (showMap) {
+                const mapSize = 180 * scale;
+                const mapX = margin;
+                const mapY = margin;
+
+                ctx.save();
+                ctx.beginPath();
+                if (ctx.roundRect) ctx.roundRect(mapX, mapY, mapSize, mapSize, 16 * scale);
+                else ctx.rect(mapX, mapY, mapSize, mapSize);
+                ctx.fillStyle = '#0f172a';
+                ctx.fill();
+                ctx.clip();
+
+                if (mapTileImage && mapTileImage.complete && mapTileImage.naturalWidth !== 0) {
+                    ctx.drawImage(mapTileImage, mapX, mapY, mapSize, mapSize);
+                } else {
+                    ctx.fillStyle = '#1e293b';
+                    ctx.fillRect(mapX, mapY, mapSize, mapSize);
+                }
+
+                ctx.beginPath();
+                ctx.arc(mapX + mapSize / 2, mapY + mapSize / 2, 6 * scale, 0, 2 * Math.PI);
+                ctx.fillStyle = '#3b82f6';
+                ctx.fill();
+                ctx.lineWidth = 2 * scale;
+                ctx.strokeStyle = '#ffffff';
+                ctx.stroke();
+                ctx.restore();
+
+                ctx.lineWidth = 2 * scale;
+                ctx.strokeStyle = '#3b82f6';
+                ctx.strokeRect(mapX, mapY, mapSize, mapSize);
+            }
+
+            // 2. Brújula
+            const showCompass = document.getElementById('toggle-compass').checked;
+            if (showCompass) {
+                const compSize = 180 * scale;
+                const compX = width - margin - compSize;
+                const compY = margin;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(compX + compSize/2, compY + compSize/2, compSize/2, 0, 2 * Math.PI);
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+                ctx.fill();
+                ctx.lineWidth = 2.5 * scale;
+                ctx.strokeStyle = '#f59e0b';
+                ctx.stroke();
+                ctx.clip();
+
+                const cx = compX + compSize / 2;
+                const cy = compY + compSize / 2;
+                const radius = compSize / 2 - (12 * scale);
+
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate((currentHeadingDegrees * Math.PI) / 180);
+
+                ctx.beginPath();
+                ctx.moveTo(0, -55 * scale);
+                ctx.lineTo(10 * scale, 0);
+                ctx.lineTo(0, 25 * scale);
+                ctx.fillStyle = '#EF4444';
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.moveTo(0, 55 * scale);
+                ctx.lineTo(-10 * scale, 0);
+                ctx.lineTo(0, 25 * scale);
+                ctx.fillStyle = '#64748B';
+                ctx.fill();
+
+                ctx.restore();
+
+                ctx.beginPath();
+                ctx.arc(cx, cy, 8 * scale, 0, 2 * Math.PI);
+                ctx.fillStyle = '#FBBF24';
+                ctx.fill();
+
+                ctx.font = `bold ${14 * scale}px sans-serif`;
+                ctx.fillStyle = '#F87171';
+                ctx.textAlign = 'center';
+                ctx.fillText('0° N', cx, cy - radius + (4 * scale));
+                ctx.fillStyle = '#94A3B8';
+                ctx.fillText('90° E', cx + radius - (10 * scale), cy + (4 * scale));
+                ctx.fillText('180° S', cx, cy + radius - (2 * scale));
+                ctx.fillText('270° O', cx - radius + (10 * scale), cy + (4 * scale));
+
+                ctx.restore();
+            }
+
+            // 3. Panel Inferior
+            const panelHeight = 220 * scale;
+            const panelY = height - panelHeight - margin;
+            const padding = 12 * scale;
+
+            drawRoundedCard(ctx, margin, panelY, boxWidth, panelHeight, 18 * scale, 'rgba(15, 23, 42, 0.92)', 'rgba(71, 85, 105, 0.8)');
+
+            const row1Y = panelY + padding;
+            const row1H = 50 * scale;
+            drawRoundedCard(ctx, margin + padding, row1Y, boxWidth - (padding * 2), row1H, 12 * scale, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
+
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = `bold ${16 * scale}px sans-serif`;
+            ctx.fillText(document.getElementById('input-company').value, margin + padding + (12 * scale), row1Y + (20 * scale));
+
+            ctx.font = `bold ${12 * scale}px sans-serif`;
+            ctx.fillStyle = '#60A5FA';
+            ctx.fillText(document.getElementById('input-project').value, margin + padding + (12 * scale), row1Y + (38 * scale));
+
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            let dateLetterStr = now.toLocaleDateString('es-ES', options);
+            dateLetterStr = dateLetterStr.charAt(0).toUpperCase() + dateLetterStr.slice(1);
+
+            ctx.font = `bold ${15 * scale}px monospace`;
+            ctx.fillStyle = '#FBBF24';
+            ctx.textAlign = 'right';
+            ctx.fillText(timeStr, margin + boxWidth - padding - (12 * scale), row1Y + (20 * scale));
+
+            ctx.font = `bold ${10 * scale}px monospace`;
+            ctx.fillStyle = '#CBD5E1';
+            ctx.fillText(`${dateLetterStr} (${currentGMTOffset})`, margin + boxWidth - padding - (12 * scale), row1Y + (38 * scale));
+
+            const row2Y = row1Y + row1H + (8 * scale);
+            const row2H = 36 * scale;
+            const showAddr = document.getElementById('toggle-address').checked;
+            const showWeather = document.getElementById('toggle-weather').checked;
+
+            if (showAddr && showWeather) {
+                const weatherW = 160 * scale;
+                const addrW = boxWidth - (padding * 2) - weatherW - (8 * scale);
+                drawRoundedCard(ctx, margin + padding, row2Y, addrW, row2H, 10 * scale, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
+                drawRoundedCard(ctx, margin + padding + addrW + (8 * scale), row2Y, weatherW, row2H, 10 * scale, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
+
+                ctx.textAlign = 'left';
+                ctx.font = `bold ${12 * scale}px sans-serif`;
+                ctx.fillStyle = '#34D399';
+                ctx.fillText(`📍 ${currentAddress}`, margin + padding + (8 * scale), row2Y + (22 * scale));
+
+                ctx.font = `bold ${12 * scale}px sans-serif`;
+                ctx.fillStyle = '#FBBF24';
+                ctx.fillText(`🌤️ 28°C · Soleado`, margin + padding + addrW + (16 * scale), row2Y + (22 * scale));
+            } else if (showAddr) {
+                drawRoundedCard(ctx, margin + padding, row2Y, boxWidth - (padding * 2), row2H, 10 * scale, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
+                ctx.textAlign = 'left';
+                ctx.font = `bold ${12 * scale}px sans-serif`;
+                ctx.fillStyle = '#34D399';
+                ctx.fillText(`📍 ${currentAddress}`, margin + padding + (8 * scale), row2Y + (22 * scale));
+            }
+
+            const row3Y = row2Y + row2H + (8 * scale);
+            const logoSize = 80 * scale;
+            const leftW = boxWidth - (padding * 2) - logoSize - (10 * scale);
+
+            const coordsY = row3Y;
+            const coordsH = 36 * scale;
+            drawRoundedCard(ctx, margin + padding, coordsY, leftW, coordsH, 10 * scale, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
+
+            ctx.textAlign = 'left';
+            ctx.font = `bold ${12 * scale}px monospace`;
+            ctx.fillStyle = '#F8FAFC';
+            ctx.fillText(`Lat: ${currentLat.toFixed(4)}, Lon: ${currentLon.toFixed(4)}`, margin + padding + (10 * scale), coordsY + (22 * scale));
+
+            ctx.font = `bold ${11 * scale}px monospace`;
+            ctx.fillStyle = '#60A5FA';
+            ctx.textAlign = 'right';
+            ctx.fillText(`Alt: ${Math.round(currentAlt)}m (±${Math.round(currentAccuracy)}m)`, margin + padding + leftW - (10 * scale), coordsY + (22 * scale));
+
+            const notesY = coordsY + coordsH + (8 * scale);
+            const notesH = 36 * scale;
+            drawRoundedCard(ctx, margin + padding, notesY, leftW, notesH, 10 * scale, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
+
+            ctx.textAlign = 'left';
+            ctx.font = `italic ${12 * scale}px sans-serif`;
+            ctx.fillStyle = '#CBD5E1';
+            ctx.fillText(`📄 ${document.getElementById('input-notes').value}`, margin + padding + (10 * scale), notesY + (22 * scale));
+
+            const logoX = margin + boxWidth - padding - logoSize;
+            drawRoundedCard(ctx, logoX, row3Y, logoSize, logoSize, 14 * scale, 'rgba(37, 99, 235, 0.95)', '#60A5FA');
+
+            if (customLogoImage) {
+                ctx.save();
+                ctx.beginPath();
+                if (ctx.roundRect) ctx.roundRect(logoX, row3Y, logoSize, logoSize, 14 * scale);
+                else ctx.rect(logoX, row3Y, logoSize, logoSize);
+                ctx.clip();
+                ctx.drawImage(customLogoImage, logoX, row3Y, logoSize, logoSize);
+                ctx.restore();
+            } else {
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = `bold ${32 * scale}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const compText = document.getElementById('input-company').value.substring(0, 2).toUpperCase();
+                ctx.fillText(compText, logoX + (logoSize / 2), row3Y + (logoSize / 2));
+            }
+        }
+
+        // CAPTURA DE FOTO INSTANTÁNEA
+        function capturePhoto() {
+            const video = document.getElementById('camera-feed');
+            const canvas = document.getElementById('snapshot-canvas');
+            
+            const width = video.videoWidth || 1080;
+            const height = video.videoHeight || 1920;
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, width, height);
+
+            drawHudOnCanvas(ctx, width, height);
+
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    saveOrShareBlob(blob, 'image');
+                }
+            }, 'image/jpeg', 0.95);
+        }
+
+        // GRABACIÓN DE VIDEO SEGURA
+        function toggleVideoRecording() {
+            if (!isRecording) {
+                recordedChunks = [];
+                try {
+                    mediaRecorder = new MediaRecorder(videoStream, { mimeType: 'video/webm;codecs=vp9,opus' });
+                } catch(e) {
+                    try {
+                        mediaRecorder = new MediaRecorder(videoStream, { mimeType: 'video/webm' });
+                    } catch(err) {
+                        mediaRecorder = new MediaRecorder(videoStream);
+                    }
+                }
+
+                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    saveOrShareBlob(blob, 'video');
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                document.getElementById('recording-badge').classList.remove('hidden');
+                document.getElementById('btn-record').className = "p-3.5 rounded-2xl bg-red-600 text-white transition flex flex-col items-center animate-pulse border border-red-500";
+
+                recordingSeconds = 0;
+                recordingTimer = setInterval(() => {
+                    recordingSeconds++;
+                    let m = Math.floor(recordingSeconds / 60).toString().padStart(2, '0');
+                    let s = (recordingSeconds % 60).toString().padStart(2, '0');
+                    document.getElementById('recording-time').innerText = `${m}:${s}`;
+                }, 1000);
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                clearInterval(recordingTimer);
+                document.getElementById('recording-badge').classList.add('hidden');
+                document.getElementById('btn-record').className = "p-3.5 rounded-2xl bg-slate-800 text-slate-200 transition flex flex-col items-center border border-slate-700";
+            }
+        }
+
+        function mostrarToast(mensaje) {
+            var toast = document.getElementById("toast-notification");
+            if (mensaje) toast.innerText = mensaje;
+            toast.className = "show";
+            setTimeout(function() {
+                toast.className = toast.className.replace("show", "");
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
