@@ -242,9 +242,6 @@
         let customLogoImage = null;
         let lastLat = 0, lastLon = 0;
         let mapTileImage = new Image();
-        let renderCanvas = document.createElement('canvas');
-        let renderCtx = renderCanvas.getContext('2d');
-        let animationFrameId = null;
 
         lucide.createIcons();
 
@@ -278,13 +275,7 @@
                     video: videoConstraints,
                     audio: true
                 });
-                const videoElement = document.getElementById('camera-feed');
-                videoElement.srcObject = videoStream;
-                
-                videoElement.onloadedmetadata = () => {
-                    renderCanvas.width = videoElement.videoWidth || 1080;
-                    renderCanvas.height = videoElement.videoHeight || 1920;
-                };
+                document.getElementById('camera-feed').srcObject = videoStream;
             } catch (err) {}
         }
 
@@ -877,47 +868,40 @@
             }, 'image/jpeg', 0.95);
         }
 
-        // GRABACIÓN DE VIDEO CON HUD INCRUSTADO EN TIEMPO REAL
+        // GRABACIÓN DE VIDEO DIRECTA Y COMPATIBLE
         function toggleVideoRecording() {
             if (!isRecording) {
                 recordedChunks = [];
-                const video = document.getElementById('camera-feed');
                 
-                renderCanvas.width = video.videoWidth || 1080;
-                renderCanvas.height = video.videoHeight || 1920;
-
-                function drawFrame() {
-                    if (!isRecording) return;
-                    renderCtx.drawImage(video, 0, 0, renderCanvas.width, renderCanvas.height);
-                    drawHudOnCanvas(renderCtx, renderCanvas.width, renderCanvas.height);
-                    animationFrameId = requestAnimationFrame(drawFrame);
-                }
-                drawFrame();
-
-                const combinedStream = renderCanvas.captureStream(30);
-                if (videoStream.getAudioTracks().length > 0) {
-                    combinedStream.addTrack(videoStream.getAudioTracks()[0]);
-                }
+                const options = [
+                    { mimeType: 'video/mp4' },
+                    { mimeType: 'video/webm;codecs=vp8,opus' },
+                    { mimeType: 'video/webm' }
+                ];
+                
+                let selectedOption = options.find(opt => MediaRecorder.isTypeSupported(opt.mimeType));
 
                 try {
-                    mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp9,opus' });
+                    mediaRecorder = selectedOption ? new MediaRecorder(videoStream, selectedOption) : new MediaRecorder(videoStream);
                 } catch(e) {
-                    try {
-                        mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm' });
-                    } catch(err) {
-                        mediaRecorder = new MediaRecorder(combinedStream);
-                    }
+                    mediaRecorder = new MediaRecorder(videoStream);
                 }
 
-                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+                mediaRecorder.ondataavailable = e => {
+                    if (e.data && e.data.size > 0) {
+                        recordedChunks.push(e.data);
+                    }
+                };
+
                 mediaRecorder.onstop = () => {
-                    cancelAnimationFrame(animationFrameId);
-                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const mimeType = mediaRecorder.mimeType || 'video/webm';
+                    const blob = new Blob(recordedChunks, { type: mimeType });
                     saveOrShareBlob(blob, 'video');
                 };
 
-                mediaRecorder.start();
+                mediaRecorder.start(1000); 
                 isRecording = true;
+                
                 document.getElementById('recording-badge').classList.remove('hidden');
                 document.getElementById('btn-record').className = "p-3.5 rounded-2xl bg-red-600 text-white transition flex flex-col items-center animate-pulse border border-red-500";
 
