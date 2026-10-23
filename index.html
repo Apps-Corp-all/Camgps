@@ -65,7 +65,6 @@
 
     <!-- Visor de Cámara en Pantalla Completa -->
     <main class="relative flex-1 flex flex-col items-center justify-center bg-black overflow-hidden">
-        <!-- object-contain para que la vista previa coincida exactamente con la foto capturada -->
         <video id="camera-feed" autoplay playsinline muted class="absolute inset-0 w-full h-full object-contain bg-black"></video>
         <canvas id="snapshot-canvas" class="hidden"></canvas>
 
@@ -80,13 +79,11 @@
                 <svg id="compass-rose" class="compass-rose w-full h-full" viewBox="0 0 100 100">
                     <circle cx="50" cy="50" r="46" fill="none" stroke="#475569" stroke-width="2" />
                     
-                    <!-- Grados e Indicadores Alrededor -->
                     <text x="50" y="11" fill="#F87171" font-size="10" font-weight="900" text-anchor="middle">0° N</text>
                     <text x="89" y="53" fill="#94A3B8" font-size="9" font-weight="700" text-anchor="middle">90° E</text>
                     <text x="50" y="94" fill="#94A3B8" font-size="9" font-weight="700" text-anchor="middle">180° S</text>
                     <text x="11" y="53" fill="#94A3B8" font-size="9" font-weight="700" text-anchor="middle">270° O</text>
 
-                    <!-- Aguja moderna -->
                     <polygon points="50,22 53,50 50,46" fill="#EF4444" />
                     <polygon points="50,22 47,50 50,46" fill="#DC2626" />
                     <polygon points="50,78 53,50 50,54" fill="#64748B" />
@@ -588,6 +585,25 @@
             }
         }
 
+        // Función auxiliar para dibujar tarjetas estilizadas con bordes en el Canvas
+        function drawRoundedCard(ctx, x, y, width, height, radius, bgColor, borderColor) {
+            ctx.save();
+            ctx.beginPath();
+            if (ctx.roundRect) {
+                ctx.roundRect(x, y, width, height, radius);
+            } else {
+                ctx.rect(x, y, width, height);
+            }
+            ctx.fillStyle = bgColor;
+            ctx.fill();
+            if (borderColor) {
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = borderColor;
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
         async function capturePhoto() {
             const video = document.getElementById('camera-feed');
             const canvas = document.getElementById('snapshot-canvas');
@@ -599,8 +615,9 @@
 
             const margin = 40;
             const boxWidth = canvas.width - (margin * 2);
-            const cornerRadius = 30;
+            const cornerRadius = 24;
 
+            // DIBUJAR MINIMAPA CON BORDE REDONDEADO
             const showMap = document.getElementById('toggle-map').checked;
             if (showMap) {
                 const mapSize = 280;
@@ -650,6 +667,7 @@
                 } catch(e) {}
             }
 
+            // DIBUJAR BRÚJULA REDONDA EN FOTO
             const showCompass = document.getElementById('toggle-compass').checked;
             if (showCompass) {
                 const compSize = 280;
@@ -707,26 +725,27 @@
                 ctx.restore();
             }
 
+            // DIBUJAR RECUADRO INFERIOR CON CADA SECCIÓN DELIMITADA
             const bottomBoxHeight = 310;
             const bottomBoxY = canvas.height - bottomBoxHeight - margin;
+            const innerPadding = 20;
 
-            ctx.save();
-            ctx.beginPath();
-            if (ctx.roundRect) {
-                ctx.roundRect(margin, bottomBoxY, boxWidth, bottomBoxHeight, cornerRadius);
-            } else {
-                ctx.rect(margin, bottomBoxY, boxWidth, bottomBoxHeight);
-            }
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-            ctx.fill();
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = 'rgba(71, 85, 105, 0.8)';
-            ctx.stroke();
+            // 1. Fondo principal transparente con borde
+            drawRoundedCard(ctx, margin, bottomBoxY, boxWidth, bottomBoxHeight, cornerRadius, 'rgba(15, 23, 42, 0.92)', 'rgba(71, 85, 105, 0.8)');
+
+            // 2. Sección Superior (Empresa, Proyecto, Fecha y Hora)
+            const topSecY = bottomBoxY + innerPadding;
+            const topSecHeight = 75;
+            drawRoundedCard(ctx, margin + innerPadding, topSecY, boxWidth - (innerPadding * 2), topSecHeight, 16, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
 
             ctx.textAlign = 'left';
             ctx.fillStyle = '#FFFFFF';
-            ctx.font = 'bold 32px sans-serif';
-            ctx.fillText(document.getElementById('input-company').value, margin + 40, bottomBoxY + 50);
+            ctx.font = 'bold 26px sans-serif';
+            ctx.fillText(document.getElementById('input-company').value, margin + innerPadding + 20, topSecY + 32);
+
+            ctx.font = 'bold 18px sans-serif';
+            ctx.fillStyle = '#60A5FA';
+            ctx.fillText(document.getElementById('input-project').value, margin + innerPadding + 20, topSecY + 58);
 
             const now = new Date();
             const timeStr = now.toLocaleTimeString();
@@ -734,78 +753,91 @@
             let dateLetterStr = now.toLocaleDateString('es-ES', options);
             dateLetterStr = dateLetterStr.charAt(0).toUpperCase() + dateLetterStr.slice(1);
 
-            ctx.font = 'bold 28px monospace';
+            ctx.font = 'bold 24px monospace';
+            ctx.fillStyle = '#FBBF24';
+            ctx.textAlign = 'right';
+            ctx.fillText(timeStr, margin + boxWidth - innerPadding - 20, topSecY + 32);
+
+            ctx.font = 'bold 16px monospace';
+            ctx.fillStyle = '#CBD5E1';
+            ctx.fillText(`${dateLetterStr} (${currentGMTOffset})`, margin + boxWidth - innerPadding - 20, topSecY + 58);
+
+            // 3. Sección Intermedia (Dirección y Clima)
+            const midSecY = topSecY + topSecHeight + 12;
+            const midSecHeight = 48;
+            const showAddr = document.getElementById('toggle-address').checked;
+            const showWeather = document.getElementById('toggle-weather').checked;
+
+            if (showAddr && showWeather) {
+                const addrWidth = boxWidth - (innerPadding * 2) - 240;
+                drawRoundedCard(ctx, margin + innerPadding, midSecY, addrWidth, midSecHeight, 14, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
+                drawRoundedCard(ctx, margin + innerPadding + addrWidth + 15, midSecY, 225, midSecHeight, 14, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
+
+                ctx.textAlign = 'left';
+                ctx.font = 'bold 18px sans-serif';
+                ctx.fillStyle = '#34D399';
+                ctx.fillText(`📍 ${currentAddress}`, margin + innerPadding + 15, midSecY + 30);
+
+                ctx.font = 'bold 18px sans-serif';
+                ctx.fillStyle = '#FBBF24';
+                ctx.fillText(`🌤️ 28°C · Soleado`, margin + innerPadding + addrWidth + 30, midSecY + 30);
+            } else if (showAddr) {
+                drawRoundedCard(ctx, margin + innerPadding, midSecY, boxWidth - (innerPadding * 2), midSecHeight, 14, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
+                ctx.textAlign = 'left';
+                ctx.font = 'bold 18px sans-serif';
+                ctx.fillStyle = '#34D399';
+                ctx.fillText(`📍 ${currentAddress}`, margin + innerPadding + 15, midSecY + 30);
+            }
+
+            // 4. Sección Inferior Izquierda (Coordenadas y Notas) + Derecha (Logotipo)
+            const lowSecY = midSecY + midSecHeight + 12;
+            const logoCardSize = 110;
+            const leftBoxWidth = boxWidth - (innerPadding * 2) - logoCardSize - 15;
+
+            // Cajas separadas para Coordenadas y Notas
+            const coordsY = lowSecY;
+            const coordsHeight = 50;
+            drawRoundedCard(ctx, margin + innerPadding, coordsY, leftBoxWidth, coordsHeight, 14, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
+
+            ctx.textAlign = 'left';
+            ctx.font = 'bold 18px monospace';
+            ctx.fillStyle = '#F8FAFC';
+            ctx.fillText(`Lat: ${currentLat.toFixed(4)}, Lon: ${currentLon.toFixed(4)}`, margin + innerPadding + 15, coordsY + 31);
+
+            ctx.font = 'bold 16px monospace';
             ctx.fillStyle = '#60A5FA';
             ctx.textAlign = 'right';
-            ctx.fillText(timeStr, margin + boxWidth - 40, bottomBoxY + 45);
+            ctx.fillText(`Alt: ${Math.round(currentAlt)}m (±${Math.round(currentAccuracy)}m)`, margin + innerPadding + leftBoxWidth - 15, coordsY + 31);
 
-            ctx.font = 'bold 20px monospace';
+            const notesY = coordsY + coordsHeight + 10;
+            const notesHeight = 50;
+            drawRoundedCard(ctx, margin + innerPadding, notesY, leftBoxWidth, notesHeight, 14, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
+
+            ctx.textAlign = 'left';
+            ctx.font = 'italic 17px sans-serif';
             ctx.fillStyle = '#CBD5E1';
-            ctx.fillText(`${dateLetterStr} (${currentGMTOffset})`, margin + boxWidth - 40, bottomBoxY + 78);
+            ctx.fillText(`📄 ${document.getElementById('input-notes').value}`, margin + innerPadding + 15, notesY + 31);
 
-            let currentY = 120;
-
-            if (document.getElementById('toggle-address').checked) {
-                ctx.textAlign = 'left';
-                ctx.font = 'bold 24px sans-serif';
-                ctx.fillStyle = '#34D399';
-                ctx.fillText(`📍 ${currentAddress}`, margin + 40, bottomBoxY + currentY);
-            }
-            if (document.getElementById('toggle-weather').checked) {
-                ctx.textAlign = 'right';
-                ctx.font = 'bold 24px sans-serif';
-                ctx.fillStyle = '#FBBF24';
-                ctx.fillText(`28°C · Soleado`, margin + boxWidth - 40, bottomBoxY + currentY);
-            }
-            currentY += 50;
-
-            if (document.getElementById('toggle-coords').checked) {
-                ctx.textAlign = 'left';
-                ctx.font = '22px monospace';
-                ctx.fillStyle = '#F8FAFC';
-                ctx.fillText(`GPS: ${currentLat.toFixed(5)}, ${currentLon.toFixed(5)}  |  Alt: ${Math.round(currentAlt)}m (±${Math.round(currentAccuracy)}m)`, margin + 40, bottomBoxY + currentY);
-                currentY += 45;
-            }
-
-            ctx.font = 'italic 20px sans-serif';
-            ctx.fillStyle = '#CBD5E1';
-            ctx.fillText(`Nota: ${document.getElementById('input-notes').value}`, margin + 40, bottomBoxY + bottomBoxHeight - 25);
-
-            const logoSize = 130;
-            const logoX = margin + boxWidth - logoSize - 40;
-            const logoY = bottomBoxY + bottomBoxHeight - logoSize - 30;
+            // Tarjeta separada para el Logotipo
+            const logoX = margin + boxWidth - innerPadding - logoCardSize;
+            drawRoundedCard(ctx, logoX, lowSecY, logoCardSize, logoCardSize, 18, 'rgba(37, 99, 235, 0.95)', '#60A5FA');
 
             if (customLogoImage) {
                 ctx.save();
                 ctx.beginPath();
-                if (ctx.roundRect) { ctx.roundRect(logoX, logoY, logoSize, logoSize, 22); }
-                else { ctx.rect(logoX, logoY, logoSize, logoSize); }
+                if (ctx.roundRect) { ctx.roundRect(logoX, lowSecY, logoCardSize, logoCardSize, 18); }
+                else { ctx.rect(logoX, lowSecY, logoCardSize, logoCardSize); }
                 ctx.clip();
-                ctx.drawImage(customLogoImage, logoX, logoY, logoSize, logoSize);
+                ctx.drawImage(customLogoImage, logoX, lowSecY, logoCardSize, logoCardSize);
                 ctx.restore();
-                ctx.lineWidth = 3;
-                ctx.strokeStyle = '#60A5FA';
-                ctx.strokeRect(logoX, logoY, logoSize, logoSize);
             } else {
-                ctx.save();
-                ctx.beginPath();
-                if (ctx.roundRect) { ctx.roundRect(logoX, logoY, logoSize, logoSize, 22); }
-                else { ctx.rect(logoX, logoY, logoSize, logoSize); }
-                ctx.fillStyle = '#2563EB';
-                ctx.fill();
-                ctx.lineWidth = 3;
-                ctx.strokeStyle = '#60A5FA';
-                ctx.stroke();
                 ctx.fillStyle = '#FFFFFF';
-                ctx.font = 'bold 54px sans-serif';
+                ctx.font = 'bold 46px sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 const compText = document.getElementById('input-company').value.substring(0, 2).toUpperCase();
-                ctx.fillText(compText, logoX + logoSize / 2, logoY + logoSize / 2);
-                ctx.restore();
+                ctx.fillText(compText, logoX + logoCardSize / 2, lowSecY + logoCardSize / 2);
             }
-
-            ctx.restore();
 
             const reader = new FileReader();
             canvas.toBlob((blob) => {
