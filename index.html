@@ -245,31 +245,9 @@
             initMiniMap(currentLat, currentLon);
             calculateTimeZone();
             registerServiceWorker();
-            requestNotificationPermission();
             setInterval(updateClock, 1000);
             updateClock();
         });
-
-        // SOLICITAR PERMISO PARA NOTIFICACIONES NATIVAS DEL SISTEMA
-        function requestNotificationPermission() {
-            if ("Notification" in window && Notification.permission === "default") {
-                Notification.requestPermission();
-            }
-        }
-
-        // MOSTRAR NOTIFICACIÓN PUSH EN EL SISTEMA OPERATIVO
-        function showNotification(title, body) {
-            if ("Notification" in window && Notification.permission === "granted") {
-                navigator.serviceWorker.ready.then((registration) => {
-                    registration.showNotification(title, {
-                        body: body,
-                        icon: 'logo.png',
-                        vibrate: [100, 50, 100],
-                        badge: 'logo.png'
-                    });
-                });
-            }
-        }
 
         async function switchCamera() {
             currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
@@ -456,7 +434,10 @@
             if ('geolocation' in navigator) {
                 navigator.geolocation.getCurrentPosition((pos) => {
                     updatePositionData(pos);
-                }, (err) => {}, { enableHighAccuracy: true, timeout: 5000, maximumAge: 5000 });
+                }, (err) => {
+                    // Fallback directo si falla la primer lectura GPS
+                    updatePositionData({ coords: { latitude: currentLat, longitude: currentLon, altitude: 0, accuracy: 10 } });
+                }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 5000 });
 
                 navigator.geolocation.watchPosition((pos) => {
                     updatePositionData(pos);
@@ -472,6 +453,11 @@
 
             document.getElementById('hud-coords').innerText = `Lat: ${currentLat.toFixed(4)}, Lon: ${currentLon.toFixed(4)}`;
             document.getElementById('hud-altitude').innerText = `Alt: ${Math.round(currentAlt)}m (±${Math.round(currentAccuracy)}m)`;
+
+            // Garantizar la carga del texto básico por si Reverse Geocoding no responde
+            let plusCode = encodePlusCode(currentLat, currentLon);
+            currentAddress = `${plusCode}, Lat: ${currentLat.toFixed(4)}, Lon: ${currentLon.toFixed(4)}`;
+            document.getElementById('hud-address').innerText = currentAddress;
 
             if (map && marker) {
                 map.setView([currentLat, currentLon], 16);
@@ -498,12 +484,16 @@
         }
 
         async function fetchAddress(lat, lon) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2500); // 2.5s Timeout
+
             try {
-                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`);
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`, { signal: controller.signal });
+                clearTimeout(timeoutId);
                 const data = await response.json();
                 
                 let plusCode = encodePlusCode(lat, lon);
-                let mainAddress = 'Ubicación actual';
+                let mainAddress = '';
 
                 if (data && data.address) {
                     const addr = data.address;
@@ -514,10 +504,14 @@
                     if (subLocality) parts.push(subLocality);
                     if (locality && locality !== subLocality) parts.push(locality);
 
-                    mainAddress = parts.length > 0 ? parts.join(', ') : (data.display_name.split(',')[0] || 'Ubicación actual');
+                    mainAddress = parts.length > 0 ? parts.join(', ') : (data.display_name.split(',')[0] || '');
                 }
 
-                currentAddress = `${plusCode}, ${mainAddress}`;
+                if (mainAddress) {
+                    currentAddress = `${plusCode}, ${mainAddress}`;
+                } else {
+                    currentAddress = `${plusCode}, Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`;
+                }
                 document.getElementById('hud-address').innerText = currentAddress;
             } catch (e) {
                 let plusCode = encodePlusCode(lat, lon);
@@ -609,7 +603,7 @@
             ctx.restore();
         }
 
-        // DESCARGA DIRECTA EN SEGUNDO PLANO Y NOTIFICACIÓN PUSH NATIVA
+        // GUARDADO SILENCIOSO DIRECTO A GALERÍA/DESCARGAS (SIN MENÚS NI ALERTAS DE NAVEGADOR)
         function saveOrShareBlob(blob, fileType) {
             const ext = fileType === 'image' ? 'jpg' : 'webm';
             const fileName = `GPS_Cam_${Date.now()}.${ext}`;
@@ -626,9 +620,6 @@
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
             }, 100);
-
-            // Emitir notificación si el permiso está activo
-            showNotification('✓ Foto Capturada', `Guardada como ${fileName}`);
         }
 
         // DIBUJO SÍNCRONO DEL HUD CON MINIMAPA SATELITAL
