@@ -65,7 +65,8 @@
 
     <!-- Visor de Cámara en Pantalla Completa -->
     <main class="relative flex-1 flex flex-col items-center justify-center bg-black overflow-hidden">
-        <video id="camera-feed" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover"></video>
+        <!-- object-contain para que la vista previa coincida exactamente con la foto capturada -->
+        <video id="camera-feed" autoplay playsinline muted class="absolute inset-0 w-full h-full object-contain bg-black"></video>
         <canvas id="snapshot-canvas" class="hidden"></canvas>
 
         <!-- Minimapa Arriba a la Izquierda -->
@@ -73,11 +74,10 @@
             <div id="mini-map" class="w-full h-full"></div>
         </div>
 
-        <!-- Brújula Redonda Minimalista con Grados Alrededor (Arriba a la Derecha) -->
+        <!-- Brújula Redonda Minimalista Arriba a la Derecha -->
         <div id="box-compass-widget" class="absolute top-3 right-3 w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-2 border-amber-500 shadow-2xl bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center p-2 pointer-events-none z-10 transition-all duration-200">
             <div class="relative w-full h-full flex items-center justify-center">
                 <svg id="compass-rose" class="compass-rose w-full h-full" viewBox="0 0 100 100">
-                    <!-- Aro exterior -->
                     <circle cx="50" cy="50" r="46" fill="none" stroke="#475569" stroke-width="2" />
                     
                     <!-- Grados e Indicadores Alrededor -->
