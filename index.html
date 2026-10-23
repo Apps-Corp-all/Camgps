@@ -52,7 +52,7 @@
             transform: translateX(-50%) translateY(-6px);
         }
 
-        /* Orientación Horizontal Ajustes */
+        /* Orientación Horizontal Adaptativa */
         @media (orientation: landscape) {
             #main-container {
                 flex-direction: row;
@@ -61,16 +61,16 @@
                 width: 90px;
                 height: 100vh;
                 flex-direction: column;
-                border-t: 0;
-                border-l: 1px solid #1e293b;
-                padding: 1rem 0.5rem;
+                border-top: 0;
+                border-left: 1px solid #1e293b;
+                padding: 1rem 0.5Rem;
             }
         }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans select-none overflow-x-hidden">
     <!-- Aviso Sutil Toast -->
-    <div id="toast-notification">✓ Guardado</div>
+    <div id="toast-notification">✓ Guardado en Galería</div>
 
     <!-- Header Superior -->
     <header class="w-full bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex justify-between items-center z-20 shadow-lg">
@@ -164,20 +164,20 @@
             </div>
         </main>
 
-        <!-- Controles Inferiores y de Cambio de Cámara -->
+        <!-- Controles Inferiores (Cambio de cámara, Tomar foto y Grabar) -->
         <footer class="w-full bg-slate-900 border-t border-slate-800 p-4 sm:p-6 flex justify-around items-center z-20">
-            <!-- Botón de Cambio de Cámara (Frontal / Trasera) -->
+            <!-- Botón Cambio de Cámara -->
             <button onclick="switchCamera()" class="p-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 active:scale-95 transition text-blue-400 border border-slate-700 flex flex-col items-center">
                 <i data-lucide="refresh-cw" class="w-6 h-6"></i>
                 <span class="text-[10px] font-bold mt-1 text-slate-300">Cámara</span>
             </button>
 
-            <!-- Botón Disparador Principal -->
+            <!-- Botón Tomar Foto -->
             <button onclick="capturePhoto()" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white border-4 border-slate-400 hover:scale-105 active:scale-95 transition flex items-center justify-center shadow-2xl">
                 <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white border-4 border-slate-900"></div>
             </button>
 
-            <!-- Botón de Grabar Video -->
+            <!-- Botón Grabar Video -->
             <button id="btn-record" onclick="toggleVideoRecording()" class="p-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 active:scale-95 transition text-red-400 border border-slate-700 flex flex-col items-center">
                 <i data-lucide="video" class="w-6 h-6" id="video-icon"></i>
                 <span class="text-[10px] font-bold mt-1 text-slate-300">Grabar</span>
@@ -618,38 +618,30 @@
             ctx.restore();
         }
 
-        async function saveOrShareBlob(blob, fileType) {
+        // GUARDADO DIRECTO A GALERÍA / DESCARGAS SIN MENÚ COMPARTIR
+        function saveOrShareBlob(blob, fileType) {
             const ext = fileType === 'image' ? 'jpg' : 'webm';
             const fileName = `GPS_Cam_${Date.now()}.${ext}`;
-            const file = new File([blob], fileName, { type: blob.type });
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
 
-            try {
-                if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                    await navigator.share({
-                        files: [file],
-                        title: 'Captura GPS',
-                        text: 'Imagen corporativa con geolocalización'
-                    });
-                    mostrarToast("✓ Procesado con éxito");
-                } else {
-                    const a = document.createElement('a');
-                    a.href = URL.createObjectURL(blob);
-                    a.download = fileName;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    mostrarToast("✓ Guardado en teléfono");
-                }
-            } catch (err) {
-                mostrarToast("✓ Guardado");
-            }
+            mostrarToast("✓ Guardado en Galería");
         }
 
         async function capturePhoto() {
             const video = document.getElementById('camera-feed');
             const canvas = document.getElementById('snapshot-canvas');
             
-            // Adaptar resolución de la imagen según orientación actual
             const isLandscape = window.innerWidth > window.innerHeight;
             canvas.width = isLandscape ? (video.videoWidth || 1920) : (video.videoHeight || 1080);
             canvas.height = isLandscape ? (video.videoHeight || 1080) : (video.videoWidth || 1920);
