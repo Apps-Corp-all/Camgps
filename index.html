@@ -461,4 +461,438 @@
             currentAccuracy = pos.coords.accuracy || 5.0;
 
             document.getElementById('hud-coords').innerText = `Lat: ${currentLat.toFixed(4)}, Lon: ${currentLon.toFixed(4)}`;
-            document.getElementById('hud-altitude').innerText = 
+            document.getElementById('hud-altitude').innerText = `Alt: ${Math.round(currentAlt)}m (±${Math.round(currentAccuracy)}m)`;
+
+            if (map && marker) {
+                map.setView([currentLat, currentLon], 15);
+                marker.setLatLng([currentLat, currentLon]);
+            }
+
+            const distance = getDistanceFromLatLonInMeters(lastLat, lastLon, currentLat, currentLon);
+            if (lastLat === 0 || distance > 20) {
+                lastLat = currentLat;
+                lastLon = currentLon;
+                fetchAddress(currentLat, currentLon);
+            }
+        }
+
+        function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+            const R = 6371000;
+            const dLat = (lat2 - lat1) * (Math.PI / 180);
+            const dLon = (lon2 - lon1) * (Math.PI / 180);
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+        }
+
+        async function fetchAddress(lat, lon) {
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`);
+                const data = await response.json();
+                
+                let plusCode = encodePlusCode(lat, lon);
+                let mainAddress = 'Ubicación actual';
+
+                if (data && data.address) {
+                    const addr = data.address;
+                    const subLocality = addr.suburb || addr.neighbourhood || addr.residential || addr.hamlet || addr.village || '';
+                    const locality = addr.city || addr.town || addr.county || addr.state || '';
+                    
+                    let parts = [];
+                    if (subLocality) parts.push(subLocality);
+                    if (locality && locality !== subLocality) parts.push(locality);
+
+                    mainAddress = parts.length > 0 ? parts.join(', ') : (data.display_name.split(',')[0] || 'Ubicación actual');
+                }
+
+                currentAddress = `${plusCode}, ${mainAddress}`;
+                document.getElementById('hud-address').innerText = currentAddress;
+            } catch (e) {
+                let plusCode = encodePlusCode(lat, lon);
+                currentAddress = `${plusCode}, Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`;
+                document.getElementById('hud-address').innerText = currentAddress;
+            }
+        }
+
+        function initCompass() {
+            if (window.DeviceOrientationEvent) {
+                window.addEventListener('deviceorientation', (e) => {
+                    if (e.alpha !== null) {
+                        currentHeadingDegrees = Math.round(e.alpha);
+                        const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+                        currentCardinal = dirs[Math.round(currentHeadingDegrees / 45) % 8];
+
+                        const rose = document.getElementById('compass-rose');
+                        if (rose) rose.style.transform = `rotate(${-currentHeadingDegrees}deg)`;
+                    }
+                });
+            }
+        }
+
+        function loadCustomLogo(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const base64Data = e.target.result;
+                    localStorage.setItem('gps_logo', base64Data);
+                    customLogoImage = new Image();
+                    customLogoImage.onload = function() {
+                        document.getElementById('logo-container').innerHTML = `<img src="${base64Data}" class="w-full h-full object-cover">`;
+                    };
+                    customLogoImage.src = base64Data;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function toggleHudElements() {
+            const toggles = ['address', 'weather', 'map', 'coords', 'compass'];
+            toggles.forEach(t => {
+                const isChecked = document.getElementById(`toggle-${t}`).checked;
+                localStorage.setItem(`gps_toggle_${t}`, isChecked);
+            });
+
+            document.getElementById('box-address').style.display = document.getElementById('toggle-address').checked ? 'flex' : 'none';
+            document.getElementById('box-weather').style.display = document.getElementById('toggle-weather').checked ? 'flex' : 'none';
+            document.getElementById('box-map').style.display = document.getElementById('toggle-map').checked ? 'block' : 'none';
+            document.getElementById('box-coords').style.display = document.getElementById('toggle-coords').checked ? 'flex' : 'none';
+            document.getElementById('box-compass-widget').style.display = document.getElementById('toggle-compass').checked ? 'flex' : 'none';
+        }
+
+        function toggleSettings() { document.getElementById('settings-modal').classList.toggle('hidden'); }
+
+        function updateSettings() {
+            const comp = document.getElementById('input-company').value;
+            const proj = document.getElementById('input-project').value;
+            const notes = document.getElementById('input-notes').value;
+
+            localStorage.setItem('gps_company', comp);
+            localStorage.setItem('gps_project', proj);
+            localStorage.setItem('gps_notes', notes);
+
+            document.getElementById('company-name-display').innerText = comp;
+            document.getElementById('project-name-display').innerText = proj;
+            document.getElementById('hud-notes').innerText = notes;
+            if (!customLogoImage) {
+                document.getElementById('logo-text').innerText = comp.substring(0, 2).toUpperCase();
+            }
+        }
+
+        function drawRoundedCard(ctx, x, y, width, height, radius, bgColor, borderColor) {
+            ctx.save();
+            ctx.beginPath();
+            if (ctx.roundRect) {
+                ctx.roundRect(x, y, width, height, radius);
+            } else {
+                ctx.rect(x, y, width, height);
+            }
+            ctx.fillStyle = bgColor;
+            ctx.fill();
+            if (borderColor) {
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = borderColor;
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function saveOrShareBlob(blob, fileType) {
+            const ext = fileType === 'image' ? 'jpg' : 'webm';
+            const fileName = `GPS_Cam_${Date.now()}.${ext}`;
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
+
+            mostrarToast("✓ Guardado en Galería");
+        }
+
+        async function capturePhoto() {
+            const video = document.getElementById('camera-feed');
+            const canvas = document.getElementById('snapshot-canvas');
+            
+            canvas.width = video.videoWidth || 1080;
+            canvas.height = video.videoHeight || 1920;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const margin = 40;
+            const boxWidth = canvas.width - (margin * 2);
+            const cornerRadius = 24;
+
+            const showMap = document.getElementById('toggle-map').checked;
+            if (showMap) {
+                const mapSize = 280;
+                const mapX = margin;
+                const mapY = margin;
+
+                try {
+                    const tileZ = 15;
+                    const xTile = Math.floor((currentLon + 180) / 360 * Math.pow(2, tileZ));
+                    const yTile = Math.floor((1 - Math.log(Math.tan(currentLat * Math.PI / 180) + 1 / Math.cos(currentLat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, tileZ));
+                    const subdomains = ['mt0', 'mt1', 'mt2', 'mt3'];
+                    const sub = subdomains[Math.abs(Math.sin(currentLat + currentLon)) * 4 | 0];
+                    const tileUrl = `https://${sub}.google.com/vt/lyrs=s,h&x=${xTile}&y=${yTile}&z=${tileZ}`;
+
+                    const mapImg = await new Promise((resolve) => {
+                        const img = new Image();
+                        img.crossOrigin = 'anonymous';
+                        img.onload = () => resolve(img);
+                        img.onerror = () => resolve(null);
+                        img.src = tileUrl;
+                    });
+
+                    if (mapImg) {
+                        ctx.save();
+                        ctx.beginPath();
+                        if (ctx.roundRect) {
+                            ctx.roundRect(mapX, mapY, mapSize, mapSize, 24);
+                        } else {
+                            ctx.rect(mapX, mapY, mapSize, mapSize);
+                        }
+                        ctx.clip();
+                        ctx.drawImage(mapImg, mapX, mapY, mapSize, mapSize);
+
+                        ctx.beginPath();
+                        ctx.arc(mapX + mapSize / 2, mapY + mapSize / 2, 10, 0, 2 * Math.PI);
+                        ctx.fillStyle = '#3b82f6';
+                        ctx.fill();
+                        ctx.lineWidth = 3;
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.stroke();
+                        ctx.restore();
+
+                        ctx.lineWidth = 3;
+                        ctx.strokeStyle = '#3b82f6';
+                        ctx.strokeRect(mapX, mapY, mapSize, mapSize);
+                    }
+                } catch(e) {}
+            }
+
+            const showCompass = document.getElementById('toggle-compass').checked;
+            if (showCompass) {
+                const compSize = 280;
+                const compX = canvas.width - margin - compSize;
+                const compY = margin;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(compX + compSize/2, compY + compSize/2, compSize/2, 0, 2 * Math.PI);
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+                ctx.fill();
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#f59e0b';
+                ctx.stroke();
+                ctx.clip();
+
+                const cx = compX + compSize / 2;
+                const cy = compY + compSize / 2;
+                const radius = compSize / 2 - 20;
+
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate((currentHeadingDegrees * Math.PI) / 180);
+
+                ctx.beginPath();
+                ctx.moveTo(0, -90);
+                ctx.lineTo(16, 0);
+                ctx.lineTo(0, 45);
+                ctx.fillStyle = '#EF4444';
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.moveTo(0, 90);
+                ctx.lineTo(-16, 0);
+                ctx.lineTo(0, 45);
+                ctx.fillStyle = '#64748B';
+                ctx.fill();
+
+                ctx.restore();
+
+                ctx.beginPath();
+                ctx.arc(cx, cy, 14, 0, 2 * Math.PI);
+                ctx.fillStyle = '#FBBF24';
+                ctx.fill();
+
+                ctx.font = 'bold 24px sans-serif';
+                ctx.fillStyle = '#F87171';
+                ctx.textAlign = 'center';
+                ctx.fillText('0° N', cx, cy - radius + 5);
+                ctx.fillStyle = '#94A3B8';
+                ctx.fillText('90° E', cx + radius - 15, cy + 8);
+                ctx.fillText('180° S', cx, cy + radius - 2);
+                ctx.fillText('270° O', cx - radius + 15, cy + 8);
+
+                ctx.restore();
+            }
+
+            const bottomBoxHeight = 310;
+            const bottomBoxY = canvas.height - bottomBoxHeight - margin;
+            const innerPadding = 20;
+
+            drawRoundedCard(ctx, margin, bottomBoxY, boxWidth, bottomBoxHeight, cornerRadius, 'rgba(15, 23, 42, 0.92)', 'rgba(71, 85, 105, 0.8)');
+
+            const topSecY = bottomBoxY + innerPadding;
+            const topSecHeight = 75;
+            drawRoundedCard(ctx, margin + innerPadding, topSecY, boxWidth - (innerPadding * 2), topSecHeight, 16, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
+
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = 'bold 26px sans-serif';
+            ctx.fillText(document.getElementById('input-company').value, margin + innerPadding + 20, topSecY + 32);
+
+            ctx.font = 'bold 18px sans-serif';
+            ctx.fillStyle = '#60A5FA';
+            ctx.fillText(document.getElementById('input-project').value, margin + innerPadding + 20, topSecY + 58);
+
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            let dateLetterStr = now.toLocaleDateString('es-ES', options);
+            dateLetterStr = dateLetterStr.charAt(0).toUpperCase() + dateLetterStr.slice(1);
+
+            ctx.font = 'bold 24px monospace';
+            ctx.fillStyle = '#FBBF24';
+            ctx.textAlign = 'right';
+            ctx.fillText(timeStr, margin + boxWidth - innerPadding - 20, topSecY + 32);
+
+            ctx.font = 'bold 16px monospace';
+            ctx.fillStyle = '#CBD5E1';
+            ctx.fillText(`${dateLetterStr} (${currentGMTOffset})`, margin + boxWidth - innerPadding - 20, topSecY + 58);
+
+            const midSecY = topSecY + topSecHeight + 12;
+            const midSecHeight = 48;
+            const showAddr = document.getElementById('toggle-address').checked;
+            const showWeather = document.getElementById('toggle-weather').checked;
+
+            if (showAddr && showWeather) {
+                const addrWidth = boxWidth - (innerPadding * 2) - 240;
+                drawRoundedCard(ctx, margin + innerPadding, midSecY, addrWidth, midSecHeight, 14, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
+                drawRoundedCard(ctx, margin + innerPadding + addrWidth + 15, midSecY, 225, midSecHeight, 14, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
+
+                ctx.textAlign = 'left';
+                ctx.font = 'bold 18px sans-serif';
+                ctx.fillStyle = '#34D399';
+                ctx.fillText(`📍 ${currentAddress}`, margin + innerPadding + 15, midSecY + 30);
+
+                ctx.font = 'bold 18px sans-serif';
+                ctx.fillStyle = '#FBBF24';
+                ctx.fillText(`🌤️ 28°C · Soleado`, margin + innerPadding + addrWidth + 30, midSecY + 30);
+            } else if (showAddr) {
+                drawRoundedCard(ctx, margin + innerPadding, midSecY, boxWidth - (innerPadding * 2), midSecHeight, 14, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
+                ctx.textAlign = 'left';
+                ctx.font = 'bold 18px sans-serif';
+                ctx.fillStyle = '#34D399';
+                ctx.fillText(`📍 ${currentAddress}`, margin + innerPadding + 15, midSecY + 30);
+            }
+
+            const lowSecY = midSecY + midSecHeight + 12;
+            const logoCardSize = 110;
+            const leftBoxWidth = boxWidth - (innerPadding * 2) - logoCardSize - 15;
+
+            const coordsY = lowSecY;
+            const coordsHeight = 50;
+            drawRoundedCard(ctx, margin + innerPadding, coordsY, leftBoxWidth, coordsHeight, 14, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
+
+            ctx.textAlign = 'left';
+            ctx.font = 'bold 18px monospace';
+            ctx.fillStyle = '#F8FAFC';
+            ctx.fillText(`Lat: ${currentLat.toFixed(4)}, Lon: ${currentLon.toFixed(4)}`, margin + innerPadding + 15, coordsY + 31);
+
+            ctx.font = 'bold 16px monospace';
+            ctx.fillStyle = '#60A5FA';
+            ctx.textAlign = 'right';
+            ctx.fillText(`Alt: ${Math.round(currentAlt)}m (±${Math.round(currentAccuracy)}m)`, margin + innerPadding + leftBoxWidth - 15, coordsY + 31);
+
+            const notesY = coordsY + coordsHeight + 10;
+            const notesHeight = 50;
+            drawRoundedCard(ctx, margin + innerPadding, notesY, leftBoxWidth, notesHeight, 14, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
+
+            ctx.textAlign = 'left';
+            ctx.font = 'italic 17px sans-serif';
+            ctx.fillStyle = '#CBD5E1';
+            ctx.fillText(`📄 ${document.getElementById('input-notes').value}`, margin + innerPadding + 15, notesY + 31);
+
+            const logoX = margin + boxWidth - innerPadding - logoCardSize;
+            drawRoundedCard(ctx, logoX, lowSecY, logoCardSize, logoCardSize, 18, 'rgba(37, 99, 235, 0.95)', '#60A5FA');
+
+            if (customLogoImage) {
+                ctx.save();
+                ctx.beginPath();
+                if (ctx.roundRect) { ctx.roundRect(logoX, lowSecY, logoCardSize, logoCardSize, 18); }
+                else { ctx.rect(logoX, lowSecY, logoCardSize, logoCardSize); }
+                ctx.clip();
+                ctx.drawImage(customLogoImage, logoX, lowSecY, logoCardSize, logoCardSize);
+                ctx.restore();
+            } else {
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = 'bold 46px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const compText = document.getElementById('input-company').value.substring(0, 2).toUpperCase();
+                ctx.fillText(compText, logoX + logoCardSize / 2, lowSecY + logoCardSize / 2);
+            }
+
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    saveOrShareBlob(blob, 'image');
+                }
+            }, 'image/jpeg', 0.95);
+        }
+
+        function toggleVideoRecording() {
+            if (!isRecording) {
+                recordedChunks = [];
+                try {
+                    mediaRecorder = new MediaRecorder(videoStream, { mimeType: 'video/webm;codecs=vp9' });
+                } catch(e) {
+                    mediaRecorder = new MediaRecorder(videoStream);
+                }
+                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    saveOrShareBlob(blob, 'video');
+                };
+                mediaRecorder.start();
+                isRecording = true;
+                document.getElementById('recording-badge').classList.remove('hidden');
+                document.getElementById('btn-record').className = "p-3.5 rounded-2xl bg-red-600 text-white transition flex flex-col items-center animate-pulse border border-red-500";
+
+                recordingSeconds = 0;
+                recordingTimer = setInterval(() => {
+                    recordingSeconds++;
+                    let m = Math.floor(recordingSeconds / 60).toString().padStart(2, '0');
+                    let s = (recordingSeconds % 60).toString().padStart(2, '0');
+                    document.getElementById('recording-time').innerText = `${m}:${s}`;
+                }, 1000);
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                clearInterval(recordingTimer);
+                document.getElementById('recording-badge').classList.add('hidden');
+                document.getElementById('btn-record').className = "p-3.5 rounded-2xl bg-slate-800 text-slate-200 transition flex flex-col items-center border border-slate-700";
+            }
+        }
+
+        function mostrarToast(mensaje) {
+            var toast = document.getElementById("toast-notification");
+            if (mensaje) toast.innerText = mensaje;
+            toast.className = "show";
+            setTimeout(function() {
+                toast.className = toast.className.replace("show", "");
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
