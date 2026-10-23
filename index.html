@@ -23,7 +23,7 @@
         .compass-rose { transition: transform 0.15s ease-out; }
         .leaflet-control-container { display: none !important; }
 
-        /* Mensaje Toast Sutil y Elegante */
+        /* Mensaje Toast Sutil */
         #toast-notification {
             visibility: hidden;
             min-width: 200px;
@@ -51,118 +51,139 @@
             opacity: 1;
             transform: translateX(-50%) translateY(-6px);
         }
+
+        /* Orientación Horizontal Ajustes */
+        @media (orientation: landscape) {
+            #main-container {
+                flex-direction: row;
+            }
+            footer {
+                width: 90px;
+                height: 100vh;
+                flex-direction: column;
+                border-t: 0;
+                border-l: 1px solid #1e293b;
+                padding: 1rem 0.5rem;
+            }
+        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans select-none overflow-x-hidden">
     <!-- Aviso Sutil Toast -->
-    <div id="toast-notification">✓ Guardado en galería</div>
+    <div id="toast-notification">✓ Guardado</div>
 
     <!-- Header Superior -->
-    <header class="w-full bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-4 py-3.5 flex justify-between items-center z-20 shadow-lg">
+    <header class="w-full bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex justify-between items-center z-20 shadow-lg">
         <div class="flex items-center space-x-3">
-            <span class="w-4 h-4 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]"></span>
-            <span class="text-base font-extrabold tracking-wide text-slate-100" id="status-text">GPS Satelital Conectado</span>
+            <span class="w-3.5 h-3.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]"></span>
+            <span class="text-sm sm:text-base font-extrabold tracking-wide text-slate-100" id="status-text">GPS Satelital Conectado</span>
         </div>
-        <button onclick="toggleSettings()" class="p-3 rounded-2xl bg-slate-800 hover:bg-slate-700 transition text-slate-200 border border-slate-700">
-            <i data-lucide="settings" class="w-6 h-6"></i>
+        <button onclick="toggleSettings()" class="p-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 transition text-slate-200 border border-slate-700">
+            <i data-lucide="settings" class="w-5 h-5"></i>
         </button>
     </header>
 
-    <!-- Visor de Cámara en Pantalla Completa (object-cover elimina las bandas negras laterales) -->
-    <main class="relative flex-1 flex flex-col items-center justify-center bg-black overflow-hidden">
-        <video id="camera-feed" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover bg-black"></video>
-        <canvas id="snapshot-canvas" class="hidden"></canvas>
+    <!-- Contenedor Principal Adaptable (Vertical / Horizontal) -->
+    <div id="main-container" class="relative flex-1 flex flex-col overflow-hidden">
+        
+        <!-- Visor de Cámara en Pantalla Completa -->
+        <main class="relative flex-1 flex flex-col items-center justify-center bg-black overflow-hidden">
+            <video id="camera-feed" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover bg-black"></video>
+            <canvas id="snapshot-canvas" class="hidden"></canvas>
 
-        <!-- Minimapa Arriba a la Izquierda -->
-        <div id="box-map" class="absolute top-3 left-3 w-28 h-28 sm:w-32 sm:h-32 rounded-xl overflow-hidden border-2 border-blue-500 shadow-2xl bg-slate-950 pointer-events-none z-10 transition-all duration-200">
-            <div id="mini-map" class="w-full h-full"></div>
-        </div>
-
-        <!-- Brújula Redonda Minimalista Arriba a la Derecha -->
-        <div id="box-compass-widget" class="absolute top-3 right-3 w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-2 border-amber-500 shadow-2xl bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center p-2 pointer-events-none z-10 transition-all duration-200">
-            <div class="relative w-full h-full flex items-center justify-center">
-                <svg id="compass-rose" class="compass-rose w-full h-full" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="46" fill="none" stroke="#475569" stroke-width="2" />
-                    <text x="50" y="11" fill="#F87171" font-size="10" font-weight="900" text-anchor="middle">0° N</text>
-                    <text x="89" y="53" fill="#94A3B8" font-size="9" font-weight="700" text-anchor="middle">90° E</text>
-                    <text x="50" y="94" fill="#94A3B8" font-size="9" font-weight="700" text-anchor="middle">180° S</text>
-                    <text x="11" y="53" fill="#94A3B8" font-size="9" font-weight="700" text-anchor="middle">270° O</text>
-                    <polygon points="50,22 53,50 50,46" fill="#EF4444" />
-                    <polygon points="50,22 47,50 50,46" fill="#DC2626" />
-                    <polygon points="50,78 53,50 50,54" fill="#64748B" />
-                    <polygon points="50,78 47,50 50,54" fill="#475569" />
-                    <circle cx="50" cy="50" r="4" fill="#FBBF24" />
-                </svg>
+            <!-- Minimapa Arriba a la Izquierda -->
+            <div id="box-map" class="absolute top-3 left-3 w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden border-2 border-blue-500 shadow-2xl bg-slate-950 pointer-events-none z-10 transition-all duration-200">
+                <div id="mini-map" class="w-full h-full"></div>
             </div>
-        </div>
 
-        <!-- RECUADRO INFERIOR -->
-        <div id="box-info-panel" class="absolute inset-x-2 bottom-2 bg-slate-900/90 backdrop-blur-xl border border-slate-700/80 rounded-2xl p-2.5 shadow-[0_15px_40px_rgba(0,0,0,0.85)] flex flex-col space-y-1.5 pointer-events-none z-10 transition-all duration-200 origin-bottom">
-            <div class="flex justify-between items-center bg-slate-800/90 px-3 py-1.5 rounded-xl border border-slate-700">
-                <div>
-                    <h2 class="text-xs sm:text-sm font-black text-white uppercase tracking-wider leading-tight" id="company-name-display">EMPRESA S.A.</h2>
-                    <p class="text-[10px] font-bold text-blue-400" id="project-name-display">Inspección de Campo</p>
-                </div>
-                <div class="text-right">
-                    <span class="text-xs sm:text-sm font-mono font-black text-amber-400 block leading-tight" id="hud-time">--:--:--</span>
-                    <span class="text-[9px] sm:text-[10px] font-mono font-bold text-slate-300 block"><span id="hud-date-text">Lunes, 19 de Octubre</span> <span id="hud-timezone" class="text-blue-400 font-black">GMT-6</span></span>
+            <!-- Brújula Redonda Minimalista Arriba a la Derecha -->
+            <div id="box-compass-widget" class="absolute top-3 right-3 w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-2 border-amber-500 shadow-2xl bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center p-2 pointer-events-none z-10 transition-all duration-200">
+                <div class="relative w-full h-full flex items-center justify-center">
+                    <svg id="compass-rose" class="compass-rose w-full h-full" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="46" fill="none" stroke="#475569" stroke-width="2" />
+                        <text x="50" y="11" fill="#F87171" font-size="10" font-weight="900" text-anchor="middle">0° N</text>
+                        <text x="89" y="53" fill="#94A3B8" font-size="9" font-weight="700" text-anchor="middle">90° E</text>
+                        <text x="50" y="94" fill="#94A3B8" font-size="9" font-weight="700" text-anchor="middle">180° S</text>
+                        <text x="11" y="53" fill="#94A3B8" font-size="9" font-weight="700" text-anchor="middle">270° O</text>
+                        <polygon points="50,22 53,50 50,46" fill="#EF4444" />
+                        <polygon points="50,22 47,50 50,46" fill="#DC2626" />
+                        <polygon points="50,78 53,50 50,54" fill="#64748B" />
+                        <polygon points="50,78 47,50 50,54" fill="#475569" />
+                        <circle cx="50" cy="50" r="4" fill="#FBBF24" />
+                    </svg>
                 </div>
             </div>
 
-            <div class="flex space-x-2 text-xs">
-                <div id="box-address" class="flex-1 flex items-center space-x-2 bg-slate-800/90 px-2.5 py-1 rounded-xl border border-slate-700 truncate shadow">
-                    <i data-lucide="map-pin" class="w-3 h-3 text-emerald-400 shrink-0"></i>
-                    <span id="hud-address" class="truncate font-extrabold text-slate-100 text-[10px]">Obteniendo ubicación...</span>
-                </div>
-                <div id="box-weather" class="w-28 flex items-center justify-center space-x-1 bg-slate-800/90 px-2 py-1 rounded-xl border border-slate-700 font-extrabold text-amber-300 shadow text-[10px] shrink-0">
-                    <i data-lucide="cloud-sun" class="w-3 h-3 text-amber-400 shrink-0"></i>
-                    <span id="hud-weather">28°C · Soleado</span>
-                </div>
-            </div>
-
-            <div class="flex items-center space-x-2">
-                <div class="flex-1 flex flex-col space-y-1">
-                    <div id="box-coords" class="bg-slate-800/90 px-2.5 py-1 rounded-xl border border-slate-700 flex items-center justify-between font-mono text-[10px] text-slate-100 font-bold shadow">
-                        <span class="truncate" id="hud-coords">Lat: 0.0000, Lon: 0.0000</span>
-                        <span id="hud-altitude" class="text-blue-400 ml-2">Alt: 0m (±5m)</span>
+            <!-- RECUADRO INFERIOR -->
+            <div id="box-info-panel" class="absolute inset-x-2 bottom-2 bg-slate-900/90 backdrop-blur-xl border border-slate-700/80 rounded-2xl p-2.5 shadow-[0_15px_40px_rgba(0,0,0,0.85)] flex flex-col space-y-1.5 pointer-events-none z-10 transition-all duration-200 origin-bottom">
+                <div class="flex justify-between items-center bg-slate-800/90 px-3 py-1.5 rounded-xl border border-slate-700">
+                    <div>
+                        <h2 class="text-xs sm:text-sm font-black text-white uppercase tracking-wider leading-tight" id="company-name-display">EMPRESA S.A.</h2>
+                        <p class="text-[10px] font-bold text-blue-400" id="project-name-display">Inspección de Campo</p>
                     </div>
-
-                    <div id="box-notes" class="bg-slate-800/90 px-2.5 py-1 rounded-xl border border-slate-700 text-[10px] text-slate-200 italic flex items-center space-x-1.5 truncate shadow font-sans">
-                        <i data-lucide="file-text" class="w-3 h-3 text-slate-400 shrink-0"></i>
-                        <span id="hud-notes" class="truncate font-bold">Revisión técnica de infraestructura</span>
+                    <div class="text-right">
+                        <span class="text-xs sm:text-sm font-mono font-black text-amber-400 block leading-tight" id="hud-time">--:--:--</span>
+                        <span class="text-[9px] sm:text-[10px] font-mono font-bold text-slate-300 block"><span id="hud-date-text">Lunes, 19 de Octubre</span> <span id="hud-timezone" class="text-blue-400 font-black">GMT-6</span></span>
                     </div>
                 </div>
 
-                <div class="w-14 h-14 sm:w-16 sm:h-16 bg-blue-600 rounded-xl overflow-hidden flex items-center justify-center font-black text-white text-lg shadow-2xl border border-blue-400 shrink-0" id="logo-container">
-                    <span id="logo-text">EM</span>
+                <div class="flex space-x-2 text-xs">
+                    <div id="box-address" class="flex-1 flex items-center space-x-2 bg-slate-800/90 px-2.5 py-1 rounded-xl border border-slate-700 truncate shadow">
+                        <i data-lucide="map-pin" class="w-3 h-3 text-emerald-400 shrink-0"></i>
+                        <span id="hud-address" class="truncate font-extrabold text-slate-100 text-[10px]">Obteniendo ubicación...</span>
+                    </div>
+                    <div id="box-weather" class="w-28 flex items-center justify-center space-x-1 bg-slate-800/90 px-2 py-1 rounded-xl border border-slate-700 font-extrabold text-amber-300 shadow text-[10px] shrink-0">
+                        <i data-lucide="cloud-sun" class="w-3 h-3 text-amber-400 shrink-0"></i>
+                        <span id="hud-weather">28°C · Soleado</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <div class="flex-1 flex flex-col space-y-1">
+                        <div id="box-coords" class="bg-slate-800/90 px-2.5 py-1 rounded-xl border border-slate-700 flex items-center justify-between font-mono text-[10px] text-slate-100 font-bold shadow">
+                            <span class="truncate" id="hud-coords">Lat: 0.0000, Lon: 0.0000</span>
+                            <span id="hud-altitude" class="text-blue-400 ml-2">Alt: 0m (±5m)</span>
+                        </div>
+
+                        <div id="box-notes" class="bg-slate-800/90 px-2.5 py-1 rounded-xl border border-slate-700 text-[10px] text-slate-200 italic flex items-center space-x-1.5 truncate shadow font-sans">
+                            <i data-lucide="file-text" class="w-3 h-3 text-slate-400 shrink-0"></i>
+                            <span id="hud-notes" class="truncate font-bold">Revisión técnica de infraestructura</span>
+                        </div>
+                    </div>
+
+                    <div class="w-14 h-14 sm:w-16 sm:h-16 bg-blue-600 rounded-xl overflow-hidden flex items-center justify-center font-black text-white text-lg shadow-2xl border border-blue-400 shrink-0" id="logo-container">
+                        <span id="logo-text">EM</span>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Indicador de Grabación Activa -->
-        <div id="recording-badge" class="absolute top-4 right-4 bg-red-600 text-white px-4 py-2 rounded-full text-sm font-extrabold uppercase tracking-wider flex items-center space-x-2.5 hidden animate-pulse shadow-2xl z-20">
-            <span class="w-3.5 h-3.5 bg-white rounded-full"></span>
-            <span id="recording-time">00:00</span>
-        </div>
-    </main>
+            <!-- Indicador de Grabación Activa -->
+            <div id="recording-badge" class="absolute top-4 right-4 bg-red-600 text-white px-4 py-2 rounded-full text-sm font-extrabold uppercase tracking-wider flex items-center space-x-2.5 hidden animate-pulse shadow-2xl z-20">
+                <span class="w-3.5 h-3.5 bg-white rounded-full"></span>
+                <span id="recording-time">00:00</span>
+            </div>
+        </main>
 
-    <!-- Controles Inferiores -->
-    <footer class="w-full bg-slate-900 border-t border-slate-800 p-6 flex justify-around items-center z-20">
-        <button onclick="openGalleryModal()" class="relative p-4 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition flex flex-col items-center border border-slate-700">
-            <i data-lucide="folder-open" class="w-7 h-7 text-blue-400"></i>
-            <span class="text-xs font-bold mt-1 text-slate-300">Galería</span>
-            <span id="gallery-badge" class="absolute -top-1 -right-1 bg-blue-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold hidden">0</span>
-        </button>
+        <!-- Controles Inferiores y de Cambio de Cámara -->
+        <footer class="w-full bg-slate-900 border-t border-slate-800 p-4 sm:p-6 flex justify-around items-center z-20">
+            <!-- Botón de Cambio de Cámara (Frontal / Trasera) -->
+            <button onclick="switchCamera()" class="p-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 active:scale-95 transition text-blue-400 border border-slate-700 flex flex-col items-center">
+                <i data-lucide="refresh-cw" class="w-6 h-6"></i>
+                <span class="text-[10px] font-bold mt-1 text-slate-300">Cámara</span>
+            </button>
 
-        <button onclick="capturePhoto()" class="w-20 h-20 rounded-full bg-white border-4 border-slate-400 hover:scale-105 active:scale-95 transition flex items-center justify-center shadow-2xl">
-            <div class="w-16 h-16 rounded-full bg-white border-4 border-slate-900"></div>
-        </button>
+            <!-- Botón Disparador Principal -->
+            <button onclick="capturePhoto()" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white border-4 border-slate-400 hover:scale-105 active:scale-95 transition flex items-center justify-center shadow-2xl">
+                <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white border-4 border-slate-900"></div>
+            </button>
 
-        <button id="btn-record" onclick="toggleVideoRecording()" class="p-4 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition flex flex-col items-center border border-slate-700">
-            <i data-lucide="video" class="w-7 h-7 text-red-400" id="video-icon"></i>
-            <span class="text-xs font-bold mt-1 text-slate-300">Grabar</span>
-        </button>
-    </footer>
+            <!-- Botón de Grabar Video -->
+            <button id="btn-record" onclick="toggleVideoRecording()" class="p-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 active:scale-95 transition text-red-400 border border-slate-700 flex flex-col items-center">
+                <i data-lucide="video" class="w-6 h-6" id="video-icon"></i>
+                <span class="text-[10px] font-bold mt-1 text-slate-300">Grabar</span>
+            </button>
+        </footer>
+    </div>
 
     <!-- Modal de Configuración -->
     <div id="settings-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
@@ -250,42 +271,14 @@
         </div>
     </div>
 
-    <!-- Modal de Galería -->
-    <div id="gallery-modal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex flex-col hidden">
-        <header class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900">
-            <h2 class="font-bold text-lg text-white">Galería de Capturas (<span id="gallery-count">0</span>)</h2>
-            <button onclick="openGalleryModal()" class="p-2 rounded-full bg-slate-800 text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
-        </header>
-        <div class="flex-1 overflow-y-auto p-4 grid grid-cols-2 sm:grid-cols-3 gap-4 content-start" id="gallery-grid"></div>
-    </div>
-
-    <!-- Visor Individual -->
-    <div id="viewer-modal" class="fixed inset-0 bg-black/95 z-60 flex flex-col justify-between p-4 hidden">
-        <div class="flex justify-between items-center">
-            <span id="viewer-date" class="text-sm font-mono text-slate-300"></span>
-            <button onclick="closeViewer()" class="p-2 rounded-full bg-slate-800 text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
-        </div>
-        <div class="flex-1 flex items-center justify-center relative my-2" id="viewer-container"></div>
-        <div class="flex justify-around items-center p-3 bg-slate-900 rounded-2xl border border-slate-800">
-            <button onclick="downloadCurrentMedia()" class="px-5 py-3 bg-blue-600 rounded-xl text-sm font-bold text-white flex items-center space-x-2">
-                <i data-lucide="download" class="w-5 h-5"></i>
-                <span>Guardar en Teléfono</span>
-            </button>
-            <button onclick="deleteCurrentMedia()" class="px-5 py-3 bg-red-600 rounded-xl text-sm font-bold text-white flex items-center space-x-2">
-                <i data-lucide="trash-2" class="w-5 h-5"></i>
-                <span>Eliminar</span>
-            </button>
-        </div>
-    </div>
-
     <!-- Script de Funcionalidad -->
     <script>
         let videoStream = null;
+        let currentFacingMode = 'environment'; // 'environment' (trasera) o 'user' (frontal)
         let currentLat = 15.5378, currentLon = -87.7063, currentAlt = 0.0, currentAccuracy = 5.0;
         let currentHeadingDegrees = 0, currentCardinal = 'N';
         let currentAddress = 'Obteniendo ubicación...';
         let currentGMTOffset = '';
-        let galleryItems = [], currentViewerIndex = null;
         let mediaRecorder = null, recordedChunks = [], isRecording = false;
         let recordingTimer = null, recordingSeconds = 0;
         let map = null, marker = null;
@@ -301,11 +294,30 @@
             initCompass();
             initMiniMap(currentLat, currentLon);
             calculateTimeZone();
-            loadPersistentGallery();
             registerServiceWorker();
             setInterval(updateClock, 1000);
             updateClock();
         });
+
+        // Cambio entre cámara Trasera y Frontal
+        async function switchCamera() {
+            currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+            }
+            await initCamera();
+            mostrarToast(currentFacingMode === 'user' ? "📷 Cámara Frontal" : "📷 Cámara Trasera");
+        }
+
+        async function initCamera() {
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: currentFacingMode, width: { ideal: 1920 }, height: { ideal: 1080 } },
+                    audio: true
+                });
+                document.getElementById('camera-feed').srcObject = videoStream;
+            } catch (err) {}
+        }
 
         function registerServiceWorker() {
             if ('serviceWorker' in navigator) {
@@ -336,20 +348,6 @@
                 if (i === 1) code += "+";
             }
             return code;
-        }
-
-        function loadPersistentGallery() {
-            const saved = localStorage.getItem('gps_gallery_items');
-            if (saved) {
-                try {
-                    galleryItems = JSON.parse(saved);
-                    updateGalleryUI();
-                } catch(e) {}
-            }
-        }
-
-        function savePersistentGallery() {
-            localStorage.setItem('gps_gallery_items', JSON.stringify(galleryItems));
         }
 
         function loadSavedSettings() {
@@ -418,16 +416,6 @@
 
             const infoPanel = document.getElementById('box-info-panel');
             infoPanel.style.transform = `scale(${panelScale / 100})`;
-        }
-
-        async function initCamera() {
-            try {
-                videoStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
-                    audio: true
-                });
-                document.getElementById('camera-feed').srcObject = videoStream;
-            } catch (err) {}
         }
 
         function updateClock() {
@@ -630,13 +618,43 @@
             ctx.restore();
         }
 
+        async function saveOrShareBlob(blob, fileType) {
+            const ext = fileType === 'image' ? 'jpg' : 'webm';
+            const fileName = `GPS_Cam_${Date.now()}.${ext}`;
+            const file = new File([blob], fileName, { type: blob.type });
+
+            try {
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Captura GPS',
+                        text: 'Imagen corporativa con geolocalización'
+                    });
+                    mostrarToast("✓ Procesado con éxito");
+                } else {
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    mostrarToast("✓ Guardado en teléfono");
+                }
+            } catch (err) {
+                mostrarToast("✓ Guardado");
+            }
+        }
+
         async function capturePhoto() {
             const video = document.getElementById('camera-feed');
             const canvas = document.getElementById('snapshot-canvas');
-            canvas.width = video.videoWidth || 1920;
-            canvas.height = video.videoHeight || 1080;
-            const ctx = canvas.getContext('2d');
+            
+            // Adaptar resolución de la imagen según orientación actual
+            const isLandscape = window.innerWidth > window.innerHeight;
+            canvas.width = isLandscape ? (video.videoWidth || 1920) : (video.videoHeight || 1080);
+            canvas.height = isLandscape ? (video.videoHeight || 1080) : (video.videoWidth || 1920);
 
+            const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             const margin = 40;
@@ -856,21 +874,10 @@
                 ctx.fillText(compText, logoX + logoCardSize / 2, lowSecY + logoCardSize / 2);
             }
 
-            const reader = new FileReader();
             canvas.toBlob((blob) => {
-                reader.readAsDataURL(blob);
-                reader.onloadend = function() {
-                    const base64data = reader.result;
-                    galleryItems.unshift({
-                        id: Date.now(),
-                        type: 'image',
-                        url: base64data,
-                        date: new Date().toLocaleString()
-                    });
-                    savePersistentGallery();
-                    updateGalleryUI();
-                    mostrarToast("✓ Foto guardada");
-                };
+                if (blob) {
+                    saveOrShareBlob(blob, 'image');
+                }
             }, 'image/jpeg', 0.95);
         }
 
@@ -885,24 +892,12 @@
                 mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
                 mediaRecorder.onstop = () => {
                     const blob = new Blob(recordedChunks, { type: 'video/webm' });
-                    const reader = new FileReader();
-                    reader.readAsDataURL(blob);
-                    reader.onloadend = function() {
-                        galleryItems.unshift({
-                            id: Date.now(),
-                            type: 'video',
-                            url: reader.result,
-                            date: new Date().toLocaleString()
-                        });
-                        savePersistentGallery();
-                        updateGalleryUI();
-                        mostrarToast("✓ Video guardado");
-                    };
+                    saveOrShareBlob(blob, 'video');
                 };
                 mediaRecorder.start();
                 isRecording = true;
                 document.getElementById('recording-badge').classList.remove('hidden');
-                document.getElementById('btn-record').className = "p-4 rounded-2xl bg-red-600 text-white transition flex flex-col items-center animate-pulse border border-red-500";
+                document.getElementById('btn-record').className = "p-3.5 rounded-2xl bg-red-600 text-white transition flex flex-col items-center animate-pulse border border-red-500";
 
                 recordingSeconds = 0;
                 recordingTimer = setInterval(() => {
@@ -916,89 +911,8 @@
                 isRecording = false;
                 clearInterval(recordingTimer);
                 document.getElementById('recording-badge').classList.add('hidden');
-                document.getElementById('btn-record').className = "p-4 rounded-2xl bg-slate-800 text-slate-200 transition flex flex-col items-center border border-slate-700";
+                document.getElementById('btn-record').className = "p-3.5 rounded-2xl bg-slate-800 text-slate-200 transition flex flex-col items-center border border-slate-700";
             }
-        }
-
-        function openGalleryModal() {
-            document.getElementById('gallery-modal').classList.toggle('hidden');
-            updateGalleryUI();
-        }
-
-        function updateGalleryUI() {
-            const grid = document.getElementById('gallery-grid');
-            document.getElementById('gallery-count').innerText = galleryItems.length;
-            const badge = document.getElementById('gallery-badge');
-            if (galleryItems.length > 0) {
-                badge.innerText = galleryItems.length;
-                badge.classList.remove('hidden');
-            } else {
-                badge.classList.add('hidden');
-            }
-
-            grid.innerHTML = '';
-            galleryItems.forEach((item, idx) => {
-                const div = document.createElement('div');
-                div.className = "relative aspect-square bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 cursor-pointer hover:opacity-95 transition";
-                div.onclick = () => openViewer(idx);
-                div.innerHTML = item.type === 'image' 
-                    ? `<img src="${item.url}" class="w-full h-full object-cover">` 
-                    : `<video src="${item.url}" class="w-full h-full object-cover"></video><div class="absolute inset-0 bg-black/40 flex items-center justify-center"><i data-lucide="play-circle" class="w-12 h-12 text-white"></i></div>`;
-                grid.appendChild(div);
-            });
-            lucide.createIcons();
-        }
-
-        function openViewer(idx) {
-            currentViewerIndex = idx;
-            const item = galleryItems[idx];
-            const container = document.getElementById('viewer-container');
-            document.getElementById('viewer-date').innerText = item.date;
-            container.innerHTML = item.type === 'image' 
-                ? `<img src="${item.url}" class="max-h-full max-w-full object-contain rounded-xl">` 
-                : `<video src="${item.url}" controls autoplay class="max-h-full max-w-full object-contain rounded-xl"></video>`;
-            document.getElementById('viewer-modal').classList.remove('hidden');
-        }
-
-        function closeViewer() { document.getElementById('viewer-modal').classList.add('hidden'); currentViewerIndex = null; }
-
-        async function downloadCurrentMedia() {
-            const item = galleryItems[currentViewerIndex];
-            const ext = item.type === 'image' ? 'jpg' : 'webm';
-            const fileName = `GPS_Cam_${Date.now()}.${ext}`;
-
-            try {
-                const res = await fetch(item.url);
-                const blob = await res.blob();
-                const file = new File([blob], fileName, { type: blob.type });
-
-                if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                    await navigator.share({
-                        files: [file],
-                        title: 'Captura GPS',
-                        text: 'Imagen corporativa con geolocalización'
-                    });
-                    mostrarToast("✓ Procesado");
-                } else {
-                    const a = document.createElement('a');
-                    a.href = item.url;
-                    a.download = fileName;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    mostrarToast("✓ Guardado");
-                }
-            } catch (err) {
-                mostrarToast("✓ Guardado en galería");
-            }
-        }
-
-        function deleteCurrentMedia() {
-            galleryItems.splice(currentViewerIndex, 1);
-            savePersistentGallery();
-            closeViewer();
-            updateGalleryUI();
-            mostrarToast("✓ Eliminado");
         }
 
         function mostrarToast(mensaje) {
