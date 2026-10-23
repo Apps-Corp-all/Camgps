@@ -245,9 +245,31 @@
             initMiniMap(currentLat, currentLon);
             calculateTimeZone();
             registerServiceWorker();
+            requestNotificationPermission();
             setInterval(updateClock, 1000);
             updateClock();
         });
+
+        // SOLICITAR PERMISO PARA NOTIFICACIONES NATIVAS DEL SISTEMA
+        function requestNotificationPermission() {
+            if ("Notification" in window && Notification.permission === "default") {
+                Notification.requestPermission();
+            }
+        }
+
+        // MOSTRAR NOTIFICACIÓN PUSH EN EL SISTEMA OPERATIVO
+        function showNotification(title, body) {
+            if ("Notification" in window && Notification.permission === "granted") {
+                navigator.serviceWorker.ready.then((registration) => {
+                    registration.showNotification(title, {
+                        body: body,
+                        icon: 'logo.png',
+                        vibrate: [100, 50, 100],
+                        badge: 'logo.png'
+                    });
+                });
+            }
+        }
 
         async function switchCamera() {
             currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
@@ -587,26 +609,11 @@
             ctx.restore();
         }
 
-        // FUNCIÓN DE GUARDADO SILENCIOSO SIN MENSAJES DE DESCARGA
-        async function saveOrShareBlob(blob, fileType) {
+        // DESCARGA DIRECTA EN SEGUNDO PLANO Y NOTIFICACIÓN PUSH NATIVA
+        function saveOrShareBlob(blob, fileType) {
             const ext = fileType === 'image' ? 'jpg' : 'webm';
             const fileName = `GPS_Cam_${Date.now()}.${ext}`;
-            const file = new File([blob], fileName, { type: blob.type });
-
-            // Si el dispositivo móvil soporta compartir de forma nativa, abre el selector limpio del sistema operativo sin mostrar descargas
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                try {
-                    await navigator.share({
-                        files: [file],
-                        title: 'Captura GPS Pro'
-                    });
-                    return;
-                } catch (err) {
-                    if (err.name === 'AbortError') return; // Si el usuario cancela, no hace nada
-                }
-            }
-
-            // Método silencioso alternativo sin prompts molestos de descarga
+            
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -619,6 +626,9 @@
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
             }, 100);
+
+            // Emitir notificación si el permiso está activo
+            showNotification('✓ Foto Capturada', `Guardada como ${fileName}`);
         }
 
         // DIBUJO SÍNCRONO DEL HUD CON MINIMAPA SATELITAL
