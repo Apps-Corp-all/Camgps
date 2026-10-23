@@ -634,7 +634,10 @@
         function drawHudOnCanvas(ctx, width, height) {
             const scale = width / 1080;
             const margin = 24 * scale;
+            
+            // Tomar los valores reales de los sliders configurados
             const customWidthPercent = (parseInt(document.getElementById('slider-panel-width').value) || 100) / 100;
+            const panelScale = (parseInt(document.getElementById('slider-panel-scale').value) || 100) / 100;
             const customBottomPx = (parseInt(document.getElementById('slider-panel-bottom').value) || 8) * scale;
             
             const boxWidth = (width - (margin * 2)) * customWidthPercent;
@@ -734,8 +737,9 @@
                 ctx.restore();
             }
 
-            // 3. Panel Inferior
-            const panelHeight = 220 * scale;
+            // 3. Panel Inferior (Ajustado con escala, ancho y altura/posición vertical)
+            ctx.save();
+            const panelHeight = (220 * panelScale) * scale;
             const panelY = height - panelHeight - margin - customBottomPx;
             const padding = 12 * scale;
 
@@ -842,6 +846,7 @@
                 const compText = document.getElementById('input-company').value.substring(0, 2).toUpperCase();
                 ctx.fillText(compText, logoX + (logoSize / 2), row3Y + (logoSize / 2));
             }
+            ctx.restore();
         }
 
         // CAPTURA DE FOTO INSTANTÁNEA
