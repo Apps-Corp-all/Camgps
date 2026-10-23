@@ -68,7 +68,7 @@
         </button>
     </header>
 
-    <!-- Visor de Cámara en Pantalla Completa (object-contain evita el zoom forzado en la frontal) -->
+    <!-- Visor de Cámara en Pantalla Completa -->
     <main class="relative flex-1 flex flex-col items-center justify-center bg-black overflow-hidden">
         <video id="camera-feed" autoplay playsinline muted class="absolute inset-0 w-full h-full object-contain bg-black"></video>
         <canvas id="snapshot-canvas" class="hidden"></canvas>
@@ -291,7 +291,6 @@
 
         async function initCamera() {
             try {
-                // Ajuste dinámico para evitar el zoom excesivo en la cámara frontal
                 const videoConstraints = currentFacingMode === 'user' 
                     ? { facingMode: 'user' } 
                     : { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } };
@@ -622,23 +621,26 @@
             mostrarToast("✓ Guardado en Galería");
         }
 
+        // CAPTURA DE FOTO PROPORCIONAL Y CORREGIDA
         async function capturePhoto() {
             const video = document.getElementById('camera-feed');
             const canvas = document.getElementById('snapshot-canvas');
             
-            canvas.width = video.videoWidth || 1080;
-            canvas.height = video.videoHeight || 1920;
+            const width = video.videoWidth || 1080;
+            const height = video.videoHeight || 1920;
+            canvas.width = width;
+            canvas.height = height;
 
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            ctx.drawImage(video, 0, 0, width, height);
 
-            const margin = 40;
-            const boxWidth = canvas.width - (margin * 2);
-            const cornerRadius = 24;
+            const scale = width / 1080;
+            const margin = 24 * scale;
+            const boxWidth = width - (margin * 2);
 
             const showMap = document.getElementById('toggle-map').checked;
             if (showMap) {
-                const mapSize = 280;
+                const mapSize = 180 * scale;
                 const mapX = margin;
                 const mapY = margin;
 
@@ -661,24 +663,21 @@
                     if (mapImg) {
                         ctx.save();
                         ctx.beginPath();
-                        if (ctx.roundRect) {
-                            ctx.roundRect(mapX, mapY, mapSize, mapSize, 24);
-                        } else {
-                            ctx.rect(mapX, mapY, mapSize, mapSize);
-                        }
+                        if (ctx.roundRect) ctx.roundRect(mapX, mapY, mapSize, mapSize, 16 * scale);
+                        else ctx.rect(mapX, mapY, mapSize, mapSize);
                         ctx.clip();
                         ctx.drawImage(mapImg, mapX, mapY, mapSize, mapSize);
 
                         ctx.beginPath();
-                        ctx.arc(mapX + mapSize / 2, mapY + mapSize / 2, 10, 0, 2 * Math.PI);
+                        ctx.arc(mapX + mapSize / 2, mapY + mapSize / 2, 6 * scale, 0, 2 * Math.PI);
                         ctx.fillStyle = '#3b82f6';
                         ctx.fill();
-                        ctx.lineWidth = 3;
+                        ctx.lineWidth = 2 * scale;
                         ctx.strokeStyle = '#ffffff';
                         ctx.stroke();
                         ctx.restore();
 
-                        ctx.lineWidth = 3;
+                        ctx.lineWidth = 2 * scale;
                         ctx.strokeStyle = '#3b82f6';
                         ctx.strokeRect(mapX, mapY, mapSize, mapSize);
                     }
@@ -687,8 +686,8 @@
 
             const showCompass = document.getElementById('toggle-compass').checked;
             if (showCompass) {
-                const compSize = 280;
-                const compX = canvas.width - margin - compSize;
+                const compSize = 180 * scale;
+                const compX = width - margin - compSize;
                 const compY = margin;
 
                 ctx.save();
@@ -696,70 +695,70 @@
                 ctx.arc(compX + compSize/2, compY + compSize/2, compSize/2, 0, 2 * Math.PI);
                 ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
                 ctx.fill();
-                ctx.lineWidth = 4;
+                ctx.lineWidth = 2.5 * scale;
                 ctx.strokeStyle = '#f59e0b';
                 ctx.stroke();
                 ctx.clip();
 
                 const cx = compX + compSize / 2;
                 const cy = compY + compSize / 2;
-                const radius = compSize / 2 - 20;
+                const radius = compSize / 2 - (12 * scale);
 
                 ctx.save();
                 ctx.translate(cx, cy);
                 ctx.rotate((currentHeadingDegrees * Math.PI) / 180);
 
                 ctx.beginPath();
-                ctx.moveTo(0, -90);
-                ctx.lineTo(16, 0);
-                ctx.lineTo(0, 45);
+                ctx.moveTo(0, -55 * scale);
+                ctx.lineTo(10 * scale, 0);
+                ctx.lineTo(0, 25 * scale);
                 ctx.fillStyle = '#EF4444';
                 ctx.fill();
 
                 ctx.beginPath();
-                ctx.moveTo(0, 90);
-                ctx.lineTo(-16, 0);
-                ctx.lineTo(0, 45);
+                ctx.moveTo(0, 55 * scale);
+                ctx.lineTo(-10 * scale, 0);
+                ctx.lineTo(0, 25 * scale);
                 ctx.fillStyle = '#64748B';
                 ctx.fill();
 
                 ctx.restore();
 
                 ctx.beginPath();
-                ctx.arc(cx, cy, 14, 0, 2 * Math.PI);
+                ctx.arc(cx, cy, 8 * scale, 0, 2 * Math.PI);
                 ctx.fillStyle = '#FBBF24';
                 ctx.fill();
 
-                ctx.font = 'bold 24px sans-serif';
+                ctx.font = `bold ${14 * scale}px sans-serif`;
                 ctx.fillStyle = '#F87171';
                 ctx.textAlign = 'center';
-                ctx.fillText('0° N', cx, cy - radius + 5);
+                ctx.fillText('0° N', cx, cy - radius + (4 * scale));
                 ctx.fillStyle = '#94A3B8';
-                ctx.fillText('90° E', cx + radius - 15, cy + 8);
-                ctx.fillText('180° S', cx, cy + radius - 2);
-                ctx.fillText('270° O', cx - radius + 15, cy + 8);
+                ctx.fillText('90° E', cx + radius - (10 * scale), cy + (4 * scale));
+                ctx.fillText('180° S', cx, cy + radius - (2 * scale));
+                ctx.fillText('270° O', cx - radius + (10 * scale), cy + (4 * scale));
 
                 ctx.restore();
             }
 
-            const bottomBoxHeight = 310;
-            const bottomBoxY = canvas.height - bottomBoxHeight - margin;
-            const innerPadding = 20;
+            const panelHeight = 220 * scale;
+            const panelY = height - panelHeight - margin;
+            const padding = 12 * scale;
 
-            drawRoundedCard(ctx, margin, bottomBoxY, boxWidth, bottomBoxHeight, cornerRadius, 'rgba(15, 23, 42, 0.92)', 'rgba(71, 85, 105, 0.8)');
+            drawRoundedCard(ctx, margin, panelY, boxWidth, panelHeight, 18 * scale, 'rgba(15, 23, 42, 0.92)', 'rgba(71, 85, 105, 0.8)');
 
-            const topSecY = bottomBoxY + innerPadding;
-            const topSecHeight = 75;
-            drawRoundedCard(ctx, margin + innerPadding, topSecY, boxWidth - (innerPadding * 2), topSecHeight, 16, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
+            const row1Y = panelY + padding;
+            const row1H = 50 * scale;
+            drawRoundedCard(ctx, margin + padding, row1Y, boxWidth - (padding * 2), row1H, 12 * scale, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
 
             ctx.textAlign = 'left';
             ctx.fillStyle = '#FFFFFF';
-            ctx.font = 'bold 26px sans-serif';
-            ctx.fillText(document.getElementById('input-company').value, margin + innerPadding + 20, topSecY + 32);
+            ctx.font = `bold ${16 * scale}px sans-serif`;
+            ctx.fillText(document.getElementById('input-company').value, margin + padding + (12 * scale), row1Y + (20 * scale));
 
-            ctx.font = 'bold 18px sans-serif';
+            ctx.font = `bold ${12 * scale}px sans-serif`;
             ctx.fillStyle = '#60A5FA';
-            ctx.fillText(document.getElementById('input-project').value, margin + innerPadding + 20, topSecY + 58);
+            ctx.fillText(document.getElementById('input-project').value, margin + padding + (12 * scale), row1Y + (38 * scale));
 
             const now = new Date();
             const timeStr = now.toLocaleTimeString();
@@ -767,86 +766,87 @@
             let dateLetterStr = now.toLocaleDateString('es-ES', options);
             dateLetterStr = dateLetterStr.charAt(0).toUpperCase() + dateLetterStr.slice(1);
 
-            ctx.font = 'bold 24px monospace';
+            ctx.font = `bold ${15 * scale}px monospace`;
             ctx.fillStyle = '#FBBF24';
             ctx.textAlign = 'right';
-            ctx.fillText(timeStr, margin + boxWidth - innerPadding - 20, topSecY + 32);
+            ctx.fillText(timeStr, margin + boxWidth - padding - (12 * scale), row1Y + (20 * scale));
 
-            ctx.font = 'bold 16px monospace';
+            ctx.font = `bold ${10 * scale}px monospace`;
             ctx.fillStyle = '#CBD5E1';
-            ctx.fillText(`${dateLetterStr} (${currentGMTOffset})`, margin + boxWidth - innerPadding - 20, topSecY + 58);
+            ctx.fillText(`${dateLetterStr} (${currentGMTOffset})`, margin + boxWidth - padding - (12 * scale), row1Y + (38 * scale));
 
-            const midSecY = topSecY + topSecHeight + 12;
-            const midSecHeight = 48;
+            const row2Y = row1Y + row1H + (8 * scale);
+            const row2H = 36 * scale;
             const showAddr = document.getElementById('toggle-address').checked;
             const showWeather = document.getElementById('toggle-weather').checked;
 
             if (showAddr && showWeather) {
-                const addrWidth = boxWidth - (innerPadding * 2) - 240;
-                drawRoundedCard(ctx, margin + innerPadding, midSecY, addrWidth, midSecHeight, 14, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
-                drawRoundedCard(ctx, margin + innerPadding + addrWidth + 15, midSecY, 225, midSecHeight, 14, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
+                const weatherW = 160 * scale;
+                const addrW = boxWidth - (padding * 2) - weatherW - (8 * scale);
+                drawRoundedCard(ctx, margin + padding, row2Y, addrW, row2H, 10 * scale, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
+                drawRoundedCard(ctx, margin + padding + addrW + (8 * scale), row2Y, weatherW, row2H, 10 * scale, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
 
                 ctx.textAlign = 'left';
-                ctx.font = 'bold 18px sans-serif';
+                ctx.font = `bold ${12 * scale}px sans-serif`;
                 ctx.fillStyle = '#34D399';
-                ctx.fillText(`📍 ${currentAddress}`, margin + innerPadding + 15, midSecY + 30);
+                ctx.fillText(`📍 ${currentAddress}`, margin + padding + (8 * scale), row2Y + (22 * scale));
 
-                ctx.font = 'bold 18px sans-serif';
+                ctx.font = `bold ${12 * scale}px sans-serif`;
                 ctx.fillStyle = '#FBBF24';
-                ctx.fillText(`🌤️ 28°C · Soleado`, margin + innerPadding + addrWidth + 30, midSecY + 30);
+                ctx.fillText(`🌤️ 28°C · Soleado`, margin + padding + addrW + (16 * scale), row2Y + (22 * scale));
             } else if (showAddr) {
-                drawRoundedCard(ctx, margin + innerPadding, midSecY, boxWidth - (innerPadding * 2), midSecHeight, 14, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
+                drawRoundedCard(ctx, margin + padding, row2Y, boxWidth - (padding * 2), row2H, 10 * scale, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
                 ctx.textAlign = 'left';
-                ctx.font = 'bold 18px sans-serif';
+                ctx.font = `bold ${12 * scale}px sans-serif`;
                 ctx.fillStyle = '#34D399';
-                ctx.fillText(`📍 ${currentAddress}`, margin + innerPadding + 15, midSecY + 30);
+                ctx.fillText(`📍 ${currentAddress}`, margin + padding + (8 * scale), row2Y + (22 * scale));
             }
 
-            const lowSecY = midSecY + midSecHeight + 12;
-            const logoCardSize = 110;
-            const leftBoxWidth = boxWidth - (innerPadding * 2) - logoCardSize - 15;
+            const row3Y = row2Y + row2H + (8 * scale);
+            const logoSize = 80 * scale;
+            const leftW = boxWidth - (padding * 2) - logoSize - (10 * scale);
 
-            const coordsY = lowSecY;
-            const coordsHeight = 50;
-            drawRoundedCard(ctx, margin + innerPadding, coordsY, leftBoxWidth, coordsHeight, 14, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
+            const coordsY = row3Y;
+            const coordsH = 36 * scale;
+            drawRoundedCard(ctx, margin + padding, coordsY, leftW, coordsH, 10 * scale, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
 
             ctx.textAlign = 'left';
-            ctx.font = 'bold 18px monospace';
+            ctx.font = `bold ${12 * scale}px monospace`;
             ctx.fillStyle = '#F8FAFC';
-            ctx.fillText(`Lat: ${currentLat.toFixed(4)}, Lon: ${currentLon.toFixed(4)}`, margin + innerPadding + 15, coordsY + 31);
+            ctx.fillText(`Lat: ${currentLat.toFixed(4)}, Lon: ${currentLon.toFixed(4)}`, margin + padding + (10 * scale), coordsY + (22 * scale));
 
-            ctx.font = 'bold 16px monospace';
+            ctx.font = `bold ${11 * scale}px monospace`;
             ctx.fillStyle = '#60A5FA';
             ctx.textAlign = 'right';
-            ctx.fillText(`Alt: ${Math.round(currentAlt)}m (±${Math.round(currentAccuracy)}m)`, margin + innerPadding + leftBoxWidth - 15, coordsY + 31);
+            ctx.fillText(`Alt: ${Math.round(currentAlt)}m (±${Math.round(currentAccuracy)}m)`, margin + padding + leftW - (10 * scale), coordsY + (22 * scale));
 
-            const notesY = coordsY + coordsHeight + 10;
-            const notesHeight = 50;
-            drawRoundedCard(ctx, margin + innerPadding, notesY, leftBoxWidth, notesHeight, 14, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
+            const notesY = coordsY + coordsH + (8 * scale);
+            const notesH = 36 * scale;
+            drawRoundedCard(ctx, margin + padding, notesY, leftW, notesH, 10 * scale, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
 
             ctx.textAlign = 'left';
-            ctx.font = 'italic 17px sans-serif';
+            ctx.font = `italic ${12 * scale}px sans-serif`;
             ctx.fillStyle = '#CBD5E1';
-            ctx.fillText(`📄 ${document.getElementById('input-notes').value}`, margin + innerPadding + 15, notesY + 31);
+            ctx.fillText(`📄 ${document.getElementById('input-notes').value}`, margin + padding + (10 * scale), notesY + (22 * scale));
 
-            const logoX = margin + boxWidth - innerPadding - logoCardSize;
-            drawRoundedCard(ctx, logoX, lowSecY, logoCardSize, logoCardSize, 18, 'rgba(37, 99, 235, 0.95)', '#60A5FA');
+            const logoX = margin + boxWidth - padding - logoSize;
+            drawRoundedCard(ctx, logoX, row3Y, logoSize, logoSize, 14 * scale, 'rgba(37, 99, 235, 0.95)', '#60A5FA');
 
             if (customLogoImage) {
                 ctx.save();
                 ctx.beginPath();
-                if (ctx.roundRect) { ctx.roundRect(logoX, lowSecY, logoCardSize, logoCardSize, 18); }
-                else { ctx.rect(logoX, lowSecY, logoCardSize, logoCardSize); }
+                if (ctx.roundRect) ctx.roundRect(logoX, row3Y, logoSize, logoSize, 14 * scale);
+                else ctx.rect(logoX, row3Y, logoSize, logoSize);
                 ctx.clip();
-                ctx.drawImage(customLogoImage, logoX, lowSecY, logoCardSize, logoCardSize);
+                ctx.drawImage(customLogoImage, logoX, row3Y, logoSize, logoSize);
                 ctx.restore();
             } else {
                 ctx.fillStyle = '#FFFFFF';
-                ctx.font = 'bold 46px sans-serif';
+                ctx.font = `bold ${32 * scale}px sans-serif`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 const compText = document.getElementById('input-company').value.substring(0, 2).toUpperCase();
-                ctx.fillText(compText, logoX + logoCardSize / 2, lowSecY + logoCardSize / 2);
+                ctx.fillText(compText, logoX + (logoSize / 2), row3Y + (logoSize / 2));
             }
 
             canvas.toBlob((blob) => {
