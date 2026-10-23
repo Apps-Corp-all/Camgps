@@ -68,7 +68,7 @@
         </button>
     </header>
 
-    <!-- Visor de Cámara en Pantalla Completa (object-cover sin zoom exagerado) -->
+    <!-- Visor de Cámara en Pantalla Completa -->
     <main class="relative flex-1 flex flex-col items-center justify-center bg-black overflow-hidden">
         <video id="camera-feed" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover bg-black"></video>
         <canvas id="snapshot-canvas" class="hidden"></canvas>
@@ -265,6 +265,7 @@
         let map = null, marker = null;
         let customLogoImage = null;
         let lastLat = 0, lastLon = 0;
+        let mapTileImage = new Image(); // Objeto global de imagen pre-cargada
 
         lucide.createIcons();
 
@@ -444,6 +445,22 @@
                 map.setView([lat, lon], 15);
                 marker.setLatLng([lat, lon]);
             }
+            preloadMapTile(lat, lon);
+        }
+
+        function preloadMapTile(lat, lon) {
+            const tileZ = 15;
+            const xTile = Math.floor((lon + 180) / 360 * Math.pow(2, tileZ));
+            const yTile = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, tileZ));
+            const subdomains = ['mt0', 'mt1', 'mt2', 'mt3'];
+            const sub = subdomains[Math.abs(Math.sin(lat + lon)) * 4 | 0];
+            
+            const tempImg = new Image();
+            tempImg.crossOrigin = 'anonymous';
+            tempImg.onload = function() {
+                mapTileImage = tempImg;
+            };
+            tempImg.src = `https://${sub}.google.com/vt/lyrs=s,h&x=${xTile}&y=${yTile}&z=${tileZ}`;
         }
 
         function initGeolocation() {
@@ -471,6 +488,7 @@
                 map.setView([currentLat, currentLon], 15);
                 marker.setLatLng([currentLat, currentLon]);
             }
+            preloadMapTile(currentLat, currentLon);
 
             const distance = getDistanceFromLatLonInMeters(lastLat, lastLon, currentLat, currentLon);
             if (lastLat === 0 || distance > 20) {
@@ -621,8 +639,8 @@
             mostrarToast("✓ Guardado en Galería");
         }
 
-        // MOTOR DE RENDERIZADO DEL HUD Y MAPA SATELITAL DE GOOGLE
-        async function drawHudOnCanvas(ctx, width, height) {
+        // DIBUJO SÍNCRONO Y RÁPIDO DEL HUD
+        function drawHudOnCanvas(ctx, width, height) {
             const scale = width / 1080;
             const margin = 24 * scale;
             const boxWidth = width - (margin * 2);
@@ -634,44 +652,30 @@
                 const mapX = margin;
                 const mapY = margin;
 
-                try {
-                    const tileZ = 15;
-                    const xTile = Math.floor((currentLon + 180) / 360 * Math.pow(2, tileZ));
-                    const yTile = Math.floor((1 - Math.log(Math.tan(currentLat * Math.PI / 180) + 1 / Math.cos(currentLat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, tileZ));
-                    const subdomains = ['mt0', 'mt1', 'mt2', 'mt3'];
-                    const sub = subdomains[Math.abs(Math.sin(currentLat + currentLon)) * 4 | 0];
-                    const tileUrl = `https://${sub}.google.com/vt/lyrs=s,h&x=${xTile}&y=${yTile}&z=${tileZ}`;
+                ctx.save();
+                ctx.beginPath();
+                if (ctx.roundRect) ctx.roundRect(mapX, mapY, mapSize, mapSize, 16 * scale);
+                else ctx.rect(mapX, mapY, mapSize, mapSize);
+                ctx.fillStyle = '#0f172a';
+                ctx.fill();
+                ctx.clip();
 
-                    const mapImg = await new Promise((resolve) => {
-                        const img = new Image();
-                        img.crossOrigin = 'anonymous';
-                        img.onload = () => resolve(img);
-                        img.onerror = () => resolve(null);
-                        img.src = tileUrl;
-                    });
+                if (mapTileImage && mapTileImage.complete && mapTileImage.naturalWidth !== 0) {
+                    ctx.drawImage(mapTileImage, mapX, mapY, mapSize, mapSize);
+                }
 
-                    if (mapImg) {
-                        ctx.save();
-                        ctx.beginPath();
-                        if (ctx.roundRect) ctx.roundRect(mapX, mapY, mapSize, mapSize, 16 * scale);
-                        else ctx.rect(mapX, mapY, mapSize, mapSize);
-                        ctx.clip();
-                        ctx.drawImage(mapImg, mapX, mapY, mapSize, mapSize);
+                ctx.beginPath();
+                ctx.arc(mapX + mapSize / 2, mapY + mapSize / 2, 6 * scale, 0, 2 * Math.PI);
+                ctx.fillStyle = '#3b82f6';
+                ctx.fill();
+                ctx.lineWidth = 2 * scale;
+                ctx.strokeStyle = '#ffffff';
+                ctx.stroke();
+                ctx.restore();
 
-                        ctx.beginPath();
-                        ctx.arc(mapX + mapSize / 2, mapY + mapSize / 2, 6 * scale, 0, 2 * Math.PI);
-                        ctx.fillStyle = '#3b82f6';
-                        ctx.fill();
-                        ctx.lineWidth = 2 * scale;
-                        ctx.strokeStyle = '#ffffff';
-                        ctx.stroke();
-                        ctx.restore();
-
-                        ctx.lineWidth = 2 * scale;
-                        ctx.strokeStyle = '#3b82f6';
-                        ctx.strokeRect(mapX, mapY, mapSize, mapSize);
-                    }
-                } catch(e) {}
+                ctx.lineWidth = 2 * scale;
+                ctx.strokeStyle = '#3b82f6';
+                ctx.strokeRect(mapX, mapY, mapSize, mapSize);
             }
 
             // 2. Brújula
@@ -842,8 +846,8 @@
             }
         }
 
-        // CAPTURA DE FOTO SEGURA Y FLUIDA
-        async function capturePhoto() {
+        // CAPTURA DE FOTO INSTANTÁNEA
+        function capturePhoto() {
             const video = document.getElementById('camera-feed');
             const canvas = document.getElementById('snapshot-canvas');
             
@@ -855,7 +859,7 @@
             const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0, width, height);
 
-            await drawHudOnCanvas(ctx, width, height);
+            drawHudOnCanvas(ctx, width, height);
 
             canvas.toBlob((blob) => {
                 if (blob) {
