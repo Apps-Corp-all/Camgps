@@ -68,9 +68,9 @@
         </button>
     </header>
 
-    <!-- Visor de Cámara en Pantalla Completa -->
+    <!-- Visor de Cámara en Pantalla Completa (object-cover elimina las bandas negras laterales) -->
     <main class="relative flex-1 flex flex-col items-center justify-center bg-black overflow-hidden">
-        <video id="camera-feed" autoplay playsinline muted class="absolute inset-0 w-full h-full object-contain bg-black"></video>
+        <video id="camera-feed" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover bg-black"></video>
         <canvas id="snapshot-canvas" class="hidden"></canvas>
 
         <!-- Minimapa Arriba a la Izquierda -->
@@ -290,6 +290,7 @@
         let recordingTimer = null, recordingSeconds = 0;
         let map = null, marker = null;
         let customLogoImage = null;
+        let lastLat = 0, lastLon = 0;
 
         lucide.createIcons();
 
@@ -301,9 +302,18 @@
             initMiniMap(currentLat, currentLon);
             calculateTimeZone();
             loadPersistentGallery();
+            registerServiceWorker();
             setInterval(updateClock, 1000);
             updateClock();
         });
+
+        function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((reg) => { console.log('Service Worker registrado:', reg.scope); })
+                    .catch((err) => { console.log('Error SW:', err); });
+            }
+        }
 
         function encodePlusCode(lat, lon) {
             const CODE_ALPHABET = "23456789CFGHJMPQRVWX";
@@ -468,11 +478,11 @@
             if ('geolocation' in navigator) {
                 navigator.geolocation.getCurrentPosition((pos) => {
                     updatePositionData(pos);
-                }, (err) => {}, { enableHighAccuracy: true, timeout: 10000 });
+                }, (err) => {}, { enableHighAccuracy: true, timeout: 5000, maximumAge: 5000 });
 
                 navigator.geolocation.watchPosition((pos) => {
                     updatePositionData(pos);
-                }, (err) => {}, { enableHighAccuracy: true, maximumAge: 0 });
+                }, (err) => {}, { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 });
             }
         }
 
@@ -490,7 +500,22 @@
                 marker.setLatLng([currentLat, currentLon]);
             }
 
-            fetchAddress(currentLat, currentLon);
+            const distance = getDistanceFromLatLonInMeters(lastLat, lastLon, currentLat, currentLon);
+            if (lastLat === 0 || distance > 20) {
+                lastLat = currentLat;
+                lastLon = currentLon;
+                fetchAddress(currentLat, currentLon);
+            }
+        }
+
+        function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+            const R = 6371000;
+            const dLat = (lat2 - lat1) * (Math.PI / 180);
+            const dLon = (lon2 - lon1) * (Math.PI / 180);
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
         }
 
         async function fetchAddress(lat, lon) {
@@ -937,7 +962,6 @@
 
         function closeViewer() { document.getElementById('viewer-modal').classList.add('hidden'); currentViewerIndex = null; }
 
-        // GUARDADO / COMPARTIR NATIVO SIN NOTIFICACIONES DE DESCARGA
         async function downloadCurrentMedia() {
             const item = galleryItems[currentViewerIndex];
             const ext = item.type === 'image' ? 'jpg' : 'webm';
