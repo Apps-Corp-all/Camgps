@@ -68,9 +68,9 @@
         </button>
     </header>
 
-    <!-- Visor de Cámara en Pantalla Completa -->
+    <!-- Visor de Cámara en Pantalla Completa (object-contain evita el zoom forzado en la frontal) -->
     <main class="relative flex-1 flex flex-col items-center justify-center bg-black overflow-hidden">
-        <video id="camera-feed" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover bg-black"></video>
+        <video id="camera-feed" autoplay playsinline muted class="absolute inset-0 w-full h-full object-contain bg-black"></video>
         <canvas id="snapshot-canvas" class="hidden"></canvas>
 
         <!-- Minimapa Arriba a la Izquierda -->
@@ -291,8 +291,13 @@
 
         async function initCamera() {
             try {
+                // Ajuste dinámico para evitar el zoom excesivo en la cámara frontal
+                const videoConstraints = currentFacingMode === 'user' 
+                    ? { facingMode: 'user' } 
+                    : { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } };
+
                 videoStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: currentFacingMode, width: { ideal: 1080 }, height: { ideal: 1920 } },
+                    video: videoConstraints,
                     audio: true
                 });
                 document.getElementById('camera-feed').srcObject = videoStream;
