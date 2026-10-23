@@ -68,31 +68,32 @@
         <video id="camera-feed" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover"></video>
         <canvas id="snapshot-canvas" class="hidden"></canvas>
 
-        <!-- Minimapa Arriba a la Izquierda (Más alejado con zoom 15) -->
+        <!-- Minimapa Arriba a la Izquierda -->
         <div id="box-map" class="absolute top-3 left-3 w-28 h-28 sm:w-32 sm:h-32 rounded-xl overflow-hidden border-2 border-blue-500 shadow-2xl bg-slate-950 pointer-events-none z-10 transition-all duration-200">
             <div id="mini-map" class="w-full h-full"></div>
         </div>
 
-        <!-- Brújula Minimalista y Moderna Arriba a la Derecha -->
-        <div id="box-compass-widget" class="absolute top-3 right-3 w-28 h-28 sm:w-32 sm:h-32 rounded-xl overflow-hidden border-2 border-amber-500 shadow-2xl bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center p-1.5 pointer-events-none z-10 transition-all duration-200">
-            <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
+        <!-- Brújula Redonda Minimalista con Grados Alrededor (Arriba a la Derecha) -->
+        <div id="box-compass-widget" class="absolute top-3 right-3 w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-2 border-amber-500 shadow-2xl bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center p-2 pointer-events-none z-10 transition-all duration-200">
+            <div class="relative w-full h-full flex items-center justify-center">
                 <svg id="compass-rose" class="compass-rose w-full h-full" viewBox="0 0 100 100">
-                    <!-- Anillo sutil de fondo -->
-                    <circle cx="50" cy="50" r="42" fill="none" stroke="#334155" stroke-width="3" />
-                    <!-- Puntos cardinales limpios -->
-                    <text x="50" y="16" fill="#F87171" font-size="16" font-weight="900" text-anchor="middle">N</text>
-                    <text x="50" y="90" fill="#94A3B8" font-size="13" font-weight="700" text-anchor="middle">S</text>
-                    <text x="86" y="54" fill="#94A3B8" font-size="13" font-weight="700" text-anchor="middle">E</text>
-                    <text x="14" y="54" fill="#94A3B8" font-size="13" font-weight="700" text-anchor="middle">O</text>
-                    <!-- Aguja moderna minimalista -->
+                    <!-- Aro exterior -->
+                    <circle cx="50" cy="50" r="46" fill="none" stroke="#475569" stroke-width="2" />
+                    
+                    <!-- Grados e Indicadores Alrededor -->
+                    <text x="50" y="11" fill="#F87171" font-size="10" font-weight="900" text-anchor="middle">0° N</text>
+                    <text x="89" y="53" fill="#94A3B8" font-size="9" font-weight="700" text-anchor="middle">90° E</text>
+                    <text x="50" y="94" fill="#94A3B8" font-size="9" font-weight="700" text-anchor="middle">180° S</text>
+                    <text x="11" y="53" fill="#94A3B8" font-size="9" font-weight="700" text-anchor="middle">270° O</text>
+
+                    <!-- Aguja moderna -->
                     <polygon points="50,22 53,50 50,46" fill="#EF4444" />
                     <polygon points="50,22 47,50 50,46" fill="#DC2626" />
                     <polygon points="50,78 53,50 50,54" fill="#64748B" />
                     <polygon points="50,78 47,50 50,54" fill="#475569" />
-                    <circle cx="50" cy="50" r="5" fill="#FBBF24" />
+                    <circle cx="50" cy="50" r="4" fill="#FBBF24" />
                 </svg>
             </div>
-            <span id="hud-heading-cardinal" class="text-[10px] font-black text-amber-400 mt-0.5">N (0°)</span>
         </div>
 
         <!-- RECUADRO INFERIOR -->
@@ -305,6 +306,29 @@
             updateClock();
         });
 
+        function encodePlusCode(lat, lon) {
+            const CODE_ALPHABET = "23456789CFGHJMPQRVWX";
+            lat = Math.min(Math.max(lat, -90), 90);
+            lon = ((lon + 180) % 360 + 360) % 360 - 180;
+
+            let latVal = Math.floor((lat + 90) * 8000);
+            let lonVal = Math.floor((lon + 180) * 8000);
+
+            let code = "";
+            let latDivs = [20 * 8000, 8000, 400, 20];
+            let lonDivs = [20 * 8000, 8000, 400, 20];
+
+            for (let i = 0; i < 4; i++) {
+                let digitLat = Math.floor(latVal / latDivs[i]);
+                let digitLon = Math.floor(lonVal / lonDivs[i]);
+                latVal %= latDivs[i];
+                lonVal %= lonDivs[i];
+                code += CODE_ALPHABET[digitLat] + CODE_ALPHABET[digitLon];
+                if (i === 1) code += "+";
+            }
+            return code;
+        }
+
         function loadPersistentGallery() {
             const saved = localStorage.getItem('gps_gallery_items');
             if (saved) {
@@ -416,7 +440,6 @@
 
         function initMiniMap(lat, lon) {
             if (!map) {
-                // Zoom cambiado a 15 para que se vea más alejado y abarque más área
                 map = L.map('mini-map', {
                     zoomControl: false,
                     attributionControl: false,
@@ -475,20 +498,27 @@
             try {
                 const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`);
                 const data = await response.json();
+                
+                let plusCode = encodePlusCode(lat, lon);
+                let mainAddress = 'Ubicación actual';
+
                 if (data && data.address) {
                     const addr = data.address;
-                    const subLocality = addr.suburb || addr.neighbourhood || addr.residential || addr.hamlet || '';
-                    const locality = addr.city || addr.town || addr.village || addr.municipality || '';
+                    const subLocality = addr.suburb || addr.neighbourhood || addr.residential || addr.hamlet || addr.village || '';
+                    const locality = addr.city || addr.town || addr.county || addr.state || '';
                     
                     let parts = [];
                     if (subLocality) parts.push(subLocality);
                     if (locality && locality !== subLocality) parts.push(locality);
 
-                    currentAddress = parts.length > 0 ? parts.join(', ') : (data.display_name.split(',')[0] || 'Ubicación actual');
-                    document.getElementById('hud-address').innerText = currentAddress;
+                    mainAddress = parts.length > 0 ? parts.join(', ') : (data.display_name.split(',')[0] || 'Ubicación actual');
                 }
+
+                currentAddress = `${plusCode}, ${mainAddress}`;
+                document.getElementById('hud-address').innerText = currentAddress;
             } catch (e) {
-                currentAddress = `Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`;
+                let plusCode = encodePlusCode(lat, lon);
+                currentAddress = `${plusCode}, Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`;
                 document.getElementById('hud-address').innerText = currentAddress;
             }
         }
@@ -503,7 +533,6 @@
 
                         const rose = document.getElementById('compass-rose');
                         if (rose) rose.style.transform = `rotate(${-currentHeadingDegrees}deg)`;
-                        document.getElementById('hud-heading-cardinal').innerText = `${currentCardinal} (${currentHeadingDegrees}°)`;
                     }
                 });
             }
@@ -579,7 +608,7 @@
                 const mapY = margin;
 
                 try {
-                    const tileZ = 15; // Zoom alejado también en la foto capturada
+                    const tileZ = 15;
                     const xTile = Math.floor((currentLon + 180) / 360 * Math.pow(2, tileZ));
                     const yTile = Math.floor((1 - Math.log(Math.tan(currentLat * Math.PI / 180) + 1 / Math.cos(currentLat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, tileZ));
                     const subdomains = ['mt0', 'mt1', 'mt2', 'mt3'];
@@ -629,65 +658,51 @@
 
                 ctx.save();
                 ctx.beginPath();
-                if (ctx.roundRect) {
-                    ctx.roundRect(compX, compY, compSize, compSize, 24);
-                } else {
-                    ctx.rect(compX, compY, compSize, compSize);
-                }
+                ctx.arc(compX + compSize/2, compY + compSize/2, compSize/2, 0, 2 * Math.PI);
                 ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
                 ctx.fill();
-                ctx.lineWidth = 3;
+                ctx.lineWidth = 4;
                 ctx.strokeStyle = '#f59e0b';
                 ctx.stroke();
                 ctx.clip();
 
                 const cx = compX + compSize / 2;
-                const cy = compY + compSize / 2 - 15;
-                const radius = 80;
-
-                ctx.beginPath();
-                ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
-                ctx.lineWidth = 4;
-                ctx.strokeStyle = '#334155';
-                ctx.stroke();
+                const cy = compY + compSize / 2;
+                const radius = compSize / 2 - 20;
 
                 ctx.save();
                 ctx.translate(cx, cy);
                 ctx.rotate((currentHeadingDegrees * Math.PI) / 180);
 
                 ctx.beginPath();
-                ctx.moveTo(0, -60);
-                ctx.lineTo(12, 0);
-                ctx.lineTo(0, 35);
+                ctx.moveTo(0, -90);
+                ctx.lineTo(16, 0);
+                ctx.lineTo(0, 45);
                 ctx.fillStyle = '#EF4444';
                 ctx.fill();
 
                 ctx.beginPath();
-                ctx.moveTo(0, 60);
-                ctx.lineTo(-12, 0);
-                ctx.lineTo(0, 35);
+                ctx.moveTo(0, 90);
+                ctx.lineTo(-16, 0);
+                ctx.lineTo(0, 45);
                 ctx.fillStyle = '#64748B';
                 ctx.fill();
+
                 ctx.restore();
 
                 ctx.beginPath();
-                ctx.arc(cx, cy, 12, 0, 2 * Math.PI);
+                ctx.arc(cx, cy, 14, 0, 2 * Math.PI);
                 ctx.fillStyle = '#FBBF24';
                 ctx.fill();
 
-                ctx.font = 'bold 26px sans-serif';
+                ctx.font = 'bold 24px sans-serif';
                 ctx.fillStyle = '#F87171';
                 ctx.textAlign = 'center';
-                ctx.fillText('N', cx, cy - radius + 22);
+                ctx.fillText('0° N', cx, cy - radius + 5);
                 ctx.fillStyle = '#94A3B8';
-                ctx.fillText('S', cx, cy + radius - 8);
-                ctx.fillText('E', cx + radius - 15, cy + 8);
-                ctx.fillText('O', cx - radius + 16, cy + 8);
-
-                ctx.font = 'bold 24px sans-serif';
-                ctx.fillStyle = '#FBBF24';
-                ctx.textAlign = 'center';
-                ctx.fillText(`${currentCardinal} (${currentHeadingDegrees}°)`, cx, compY + compSize - 30);
+                ctx.fillText('90° E', cx + radius - 15, cy + 8);
+                ctx.fillText('180° S', cx, cy + radius - 2);
+                ctx.fillText('270° O', cx - radius + 15, cy + 8);
 
                 ctx.restore();
             }
