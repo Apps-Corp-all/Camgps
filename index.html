@@ -265,6 +265,7 @@
         let map = null, marker = null;
         let customLogoImage = null;
         let lastLat = 0, lastLon = 0;
+        let cachedMapImg = null;
 
         lucide.createIcons();
 
@@ -621,23 +622,13 @@
             mostrarToast("✓ Guardado en Galería");
         }
 
-        // CAPTURA DE FOTO PROPORCIONAL Y CORREGIDA
-        async function capturePhoto() {
-            const video = document.getElementById('camera-feed');
-            const canvas = document.getElementById('snapshot-canvas');
-            
-            const width = video.videoWidth || 1080;
-            const height = video.videoHeight || 1920;
-            canvas.width = width;
-            canvas.height = height;
-
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, width, height);
-
+        // MOTOR DE RENDERIZADO COMPARTIDO (FOTO Y VIDEO CON HUD INCLUIDO)
+        async function drawHudOnCanvas(ctx, width, height) {
             const scale = width / 1080;
             const margin = 24 * scale;
             const boxWidth = width - (margin * 2);
 
+            // 1. Minimapa Satelital
             const showMap = document.getElementById('toggle-map').checked;
             if (showMap) {
                 const mapSize = 180 * scale;
@@ -645,28 +636,30 @@
                 const mapY = margin;
 
                 try {
-                    const tileZ = 15;
-                    const xTile = Math.floor((currentLon + 180) / 360 * Math.pow(2, tileZ));
-                    const yTile = Math.floor((1 - Math.log(Math.tan(currentLat * Math.PI / 180) + 1 / Math.cos(currentLat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, tileZ));
-                    const subdomains = ['mt0', 'mt1', 'mt2', 'mt3'];
-                    const sub = subdomains[Math.abs(Math.sin(currentLat + currentLon)) * 4 | 0];
-                    const tileUrl = `https://${sub}.google.com/vt/lyrs=s,h&x=${xTile}&y=${yTile}&z=${tileZ}`;
+                    if (!cachedMapImg) {
+                        const tileZ = 15;
+                        const xTile = Math.floor((currentLon + 180) / 360 * Math.pow(2, tileZ));
+                        const yTile = Math.floor((1 - Math.log(Math.tan(currentLat * Math.PI / 180) + 1 / Math.cos(currentLat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, tileZ));
+                        const subdomains = ['mt0', 'mt1', 'mt2', 'mt3'];
+                        const sub = subdomains[Math.abs(Math.sin(currentLat + currentLon)) * 4 | 0];
+                        const tileUrl = `https://${sub}.google.com/vt/lyrs=s,h&x=${xTile}&y=${yTile}&z=${tileZ}`;
 
-                    const mapImg = await new Promise((resolve) => {
-                        const img = new Image();
-                        img.crossOrigin = 'anonymous';
-                        img.onload = () => resolve(img);
-                        img.onerror = () => resolve(null);
-                        img.src = tileUrl;
-                    });
+                        cachedMapImg = await new Promise((resolve) => {
+                            const img = new Image();
+                            img.crossOrigin = 'anonymous';
+                            img.onload = () => resolve(img);
+                            img.onerror = () => resolve(null);
+                            img.src = tileUrl;
+                        });
+                    }
 
-                    if (mapImg) {
+                    if (cachedMapImg) {
                         ctx.save();
                         ctx.beginPath();
                         if (ctx.roundRect) ctx.roundRect(mapX, mapY, mapSize, mapSize, 16 * scale);
                         else ctx.rect(mapX, mapY, mapSize, mapSize);
                         ctx.clip();
-                        ctx.drawImage(mapImg, mapX, mapY, mapSize, mapSize);
+                        ctx.drawImage(cachedMapImg, mapX, mapY, mapSize, mapSize);
 
                         ctx.beginPath();
                         ctx.arc(mapX + mapSize / 2, mapY + mapSize / 2, 6 * scale, 0, 2 * Math.PI);
@@ -684,6 +677,7 @@
                 } catch(e) {}
             }
 
+            // 2. Brújula
             const showCompass = document.getElementById('toggle-compass').checked;
             if (showCompass) {
                 const compSize = 180 * scale;
@@ -741,6 +735,7 @@
                 ctx.restore();
             }
 
+            // 3. Panel Inferior
             const panelHeight = 220 * scale;
             const panelY = height - panelHeight - margin;
             const padding = 12 * scale;
@@ -848,6 +843,22 @@
                 const compText = document.getElementById('input-company').value.substring(0, 2).toUpperCase();
                 ctx.fillText(compText, logoX + (logoSize / 2), row3Y + (logoSize / 2));
             }
+        }
+
+        // CAPTURA DE FOTO
+        async function capturePhoto() {
+            const video = document.getElementById('camera-feed');
+            const canvas = document.getElementById('snapshot-canvas');
+            
+            const width = video.videoWidth || 1080;
+            const height = video.videoHeight || 1920;
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, width, height);
+
+            await drawHudOnCanvas(ctx, width, height);
 
             canvas.toBlob((blob) => {
                 if (blob) {
@@ -856,19 +867,49 @@
             }, 'image/jpeg', 0.95);
         }
 
+        // GRABACIÓN DE VIDEO CON HUD INCLUIDO
+        let renderInterval = null;
+
         function toggleVideoRecording() {
             if (!isRecording) {
                 recordedChunks = [];
-                try {
-                    mediaRecorder = new MediaRecorder(videoStream, { mimeType: 'video/webm;codecs=vp9' });
-                } catch(e) {
-                    mediaRecorder = new MediaRecorder(videoStream);
+                const video = document.getElementById('camera-feed');
+                const canvas = document.getElementById('snapshot-canvas');
+                
+                canvas.width = video.videoWidth || 1080;
+                canvas.height = video.videoHeight || 1920;
+                const ctx = canvas.getContext('2d');
+
+                // Renderizar fotogramas en tiempo real al canvas para capturar audio y video con HUD
+                renderInterval = setInterval(async () => {
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    await drawHudOnCanvas(ctx, canvas.width, canvas.height);
+                }, 33); // ~30 fps
+
+                const canvasStream = canvas.captureStream(30);
+                
+                // Agregar audio del micrófono al stream del canvas
+                if (videoStream.getAudioTracks().length > 0) {
+                    canvasStream.addTrack(videoStream.getAudioTracks()[0]);
                 }
+
+                try {
+                    mediaRecorder = new MediaRecorder(canvasStream, { mimeType: 'video/webm;codecs=vp9,opus' });
+                } catch(e) {
+                    try {
+                        mediaRecorder = new MediaRecorder(canvasStream, { mimeType: 'video/webm' });
+                    } catch(err) {
+                        mediaRecorder = new MediaRecorder(canvasStream);
+                    }
+                }
+
                 mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
                 mediaRecorder.onstop = () => {
+                    clearInterval(renderInterval);
                     const blob = new Blob(recordedChunks, { type: 'video/webm' });
                     saveOrShareBlob(blob, 'video');
                 };
+
                 mediaRecorder.start();
                 isRecording = true;
                 document.getElementById('recording-badge').classList.remove('hidden');
@@ -882,6 +923,7 @@
                     document.getElementById('recording-time').innerText = `${m}:${s}`;
                 }, 1000);
             } else {
+                clearInterval(renderInterval);
                 mediaRecorder.stop();
                 isRecording = false;
                 clearInterval(recordingTimer);
