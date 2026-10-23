@@ -106,15 +106,9 @@
                 </div>
             </div>
         </div>
-
-        <!-- Indicador de Grabación Activa -->
-        <div id="recording-badge" class="absolute top-4 right-4 bg-red-600 text-white px-4 py-2 rounded-full text-sm font-extrabold uppercase tracking-wider flex items-center space-x-2.5 hidden animate-pulse shadow-2xl z-20">
-            <span class="w-3.5 h-3.5 bg-white rounded-full"></span>
-            <span id="recording-time">00:00</span>
-        </div>
     </main>
 
-    <!-- Controles Inferiores Fijos (Vertical) -->
+    <!-- Controles Inferiores Fijos -->
     <footer class="w-full bg-slate-900 border-t border-slate-800 p-4 sm:p-6 flex justify-around items-center z-20">
         <!-- Botón Cambio de Cámara -->
         <button onclick="switchCamera()" class="p-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 active:scale-95 transition text-blue-400 border border-slate-700 flex flex-col items-center">
@@ -125,12 +119,6 @@
         <!-- Botón Tomar Foto -->
         <button onclick="capturePhoto()" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white border-4 border-slate-400 hover:scale-105 active:scale-95 transition flex items-center justify-center shadow-2xl">
             <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white border-4 border-slate-900"></div>
-        </button>
-
-        <!-- Botón Grabar Video -->
-        <button id="btn-record" onclick="toggleVideoRecording()" class="p-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 active:scale-95 transition text-red-400 border border-slate-700 flex flex-col items-center">
-            <i data-lucide="video" class="w-6 h-6" id="video-icon"></i>
-            <span class="text-[10px] font-bold mt-1 text-slate-300">Grabar</span>
         </button>
     </footer>
 
@@ -181,7 +169,7 @@
 
                         <div class="bg-slate-800/85 p-3 rounded-xl border border-slate-700">
                             <div class="flex justify-between items-center mb-1">
-                                <span class="font-medium text-xs">📊 Escala del Panel Inferior</span>
+                                <span class="font-medium text-xs">📊 Escala General del Panel</span>
                                 <span id="val-panel-scale" class="text-xs font-mono text-emerald-400">100%</span>
                             </div>
                             <input type="range" id="slider-panel-scale" min="70" max="120" value="100" oninput="updateElementSizes()" class="w-full accent-emerald-500 cursor-pointer">
@@ -193,6 +181,14 @@
                                 <span id="val-panel-width" class="text-xs font-mono text-cyan-400">100%</span>
                             </div>
                             <input type="range" id="slider-panel-width" min="60" max="100" value="100" oninput="updateElementSizes()" class="w-full accent-cyan-500 cursor-pointer">
+                        </div>
+
+                        <div class="bg-slate-800/85 p-3 rounded-xl border border-slate-700">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="font-medium text-xs">↕️ Altura/Margen del Panel Inferior</span>
+                                <span id="val-panel-bottom" class="text-xs font-mono text-indigo-400">8px</span>
+                            </div>
+                            <input type="range" id="slider-panel-bottom" min="0" max="80" value="8" oninput="updateElementSizes()" class="w-full accent-indigo-500 cursor-pointer">
                         </div>
                     </div>
                 </div>
@@ -236,8 +232,6 @@
         let currentHeadingDegrees = 0, currentCardinal = 'N';
         let currentAddress = 'Obteniendo ubicación...';
         let currentGMTOffset = '';
-        let mediaRecorder = null, recordedChunks = [], isRecording = false;
-        let recordingTimer = null, recordingSeconds = 0;
         let map = null, marker = null;
         let customLogoImage = null;
         let lastLat = 0, lastLon = 0;
@@ -273,7 +267,7 @@
 
                 videoStream = await navigator.mediaDevices.getUserMedia({
                     video: videoConstraints,
-                    audio: true
+                    audio: false
                 });
                 document.getElementById('camera-feed').srcObject = videoStream;
             } catch (err) {}
@@ -340,6 +334,9 @@
             if (localStorage.getItem('gps_width_panel')) {
                 document.getElementById('slider-panel-width').value = localStorage.getItem('gps_width_panel');
             }
+            if (localStorage.getItem('gps_bottom_panel')) {
+                document.getElementById('slider-panel-bottom').value = localStorage.getItem('gps_bottom_panel');
+            }
 
             const toggles = ['address', 'weather', 'map', 'coords', 'compass'];
             toggles.forEach(t => {
@@ -360,16 +357,19 @@
             const compassSize = document.getElementById('slider-compass-size').value;
             const panelScale = document.getElementById('slider-panel-scale').value;
             const panelWidth = document.getElementById('slider-panel-width').value;
+            const panelBottom = document.getElementById('slider-panel-bottom').value;
 
             localStorage.setItem('gps_size_map', mapSize);
             localStorage.setItem('gps_size_compass', compassSize);
             localStorage.setItem('gps_scale_panel', panelScale);
             localStorage.setItem('gps_width_panel', panelWidth);
+            localStorage.setItem('gps_bottom_panel', panelBottom);
 
             document.getElementById('val-map-size').innerText = `${mapSize}px`;
             document.getElementById('val-compass-size').innerText = `${compassSize}px`;
             document.getElementById('val-panel-scale').innerText = `${panelScale}%`;
             document.getElementById('val-panel-width').innerText = `${panelWidth}%`;
+            document.getElementById('val-panel-bottom').innerText = `${panelBottom}px`;
 
             const mapBox = document.getElementById('box-map');
             mapBox.style.width = `${mapSize}px`;
@@ -384,6 +384,7 @@
             infoPanel.style.transform = `scale(${panelScale / 100}) translateX(-50%)`;
             infoPanel.style.left = `50%`;
             infoPanel.style.width = `${panelWidth}%`;
+            infoPanel.style.bottom = `${panelBottom}px`;
         }
 
         function updateClock() {
@@ -448,7 +449,6 @@
 
         function initGeolocation() {
             if ('geolocation' in navigator) {
-                // Forzar carga inmediata con valores por defecto para que nunca se quede en "Obteniendo..."
                 let plusCodeInit = encodePlusCode(currentLat, currentLon);
                 currentAddress = `${plusCodeInit}, Lat: ${currentLat.toFixed(4)}, Lon: ${currentLon.toFixed(4)}`;
                 document.getElementById('hud-address').innerText = currentAddress;
@@ -456,9 +456,7 @@
 
                 navigator.geolocation.getCurrentPosition((pos) => {
                     updatePositionData(pos);
-                }, (err) => {
-                    console.log("GPS Timeout o error, usando fallback.");
-                }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 });
+                }, (err) => {}, { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 });
 
                 navigator.geolocation.watchPosition((pos) => {
                     updatePositionData(pos);
@@ -531,9 +529,7 @@
                     currentAddress = `${plusCode}, ${mainAddress}`;
                     document.getElementById('hud-address').innerText = currentAddress;
                 }
-            } catch (e) {
-                // Mantiene el plus code con coordenadas si falla la red
-            }
+            } catch (e) {}
         }
 
         function initCompass() {
@@ -619,10 +615,8 @@
             ctx.restore();
         }
 
-        function saveOrShareBlob(blob, fileType) {
-            const ext = fileType === 'image' ? 'jpg' : 'webm';
-            const fileName = `GPS_Cam_${Date.now()}.${ext}`;
-            
+        function saveOrShareBlob(blob) {
+            const fileName = `GPS_Cam_${Date.now()}.jpg`;
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -641,6 +635,8 @@
             const scale = width / 1080;
             const margin = 24 * scale;
             const customWidthPercent = (parseInt(document.getElementById('slider-panel-width').value) || 100) / 100;
+            const customBottomPx = (parseInt(document.getElementById('slider-panel-bottom').value) || 8) * scale;
+            
             const boxWidth = (width - (margin * 2)) * customWidthPercent;
             const boxX = margin + ((width - (margin * 2) - boxWidth) / 2);
 
@@ -740,7 +736,7 @@
 
             // 3. Panel Inferior
             const panelHeight = 220 * scale;
-            const panelY = height - panelHeight - margin;
+            const panelY = height - panelHeight - margin - customBottomPx;
             const padding = 12 * scale;
 
             drawRoundedCard(ctx, boxX, panelY, boxWidth, panelHeight, 18 * scale, 'rgba(15, 23, 42, 0.92)', 'rgba(71, 85, 105, 0.8)');
@@ -865,62 +861,9 @@
 
             canvas.toBlob((blob) => {
                 if (blob) {
-                    saveOrShareBlob(blob, 'image');
+                    saveOrShareBlob(blob);
                 }
             }, 'image/jpeg', 0.95);
-        }
-
-        // GRABACIÓN DE VIDEO DIRECTA Y COMPATIBLE
-        function toggleVideoRecording() {
-            if (!isRecording) {
-                recordedChunks = [];
-                
-                const options = [
-                    { mimeType: 'video/mp4' },
-                    { mimeType: 'video/webm;codecs=vp8,opus' },
-                    { mimeType: 'video/webm' }
-                ];
-                
-                let selectedOption = options.find(opt => MediaRecorder.isTypeSupported(opt.mimeType));
-
-                try {
-                    mediaRecorder = selectedOption ? new MediaRecorder(videoStream, selectedOption) : new MediaRecorder(videoStream);
-                } catch(e) {
-                    mediaRecorder = new MediaRecorder(videoStream);
-                }
-
-                mediaRecorder.ondataavailable = e => {
-                    if (e.data && e.data.size > 0) {
-                        recordedChunks.push(e.data);
-                    }
-                };
-
-                mediaRecorder.onstop = () => {
-                    const mimeType = mediaRecorder.mimeType || 'video/webm';
-                    const blob = new Blob(recordedChunks, { type: mimeType });
-                    saveOrShareBlob(blob, 'video');
-                };
-
-                mediaRecorder.start(1000); 
-                isRecording = true;
-                
-                document.getElementById('recording-badge').classList.remove('hidden');
-                document.getElementById('btn-record').className = "p-3.5 rounded-2xl bg-red-600 text-white transition flex flex-col items-center animate-pulse border border-red-500";
-
-                recordingSeconds = 0;
-                recordingTimer = setInterval(() => {
-                    recordingSeconds++;
-                    let m = Math.floor(recordingSeconds / 60).toString().padStart(2, '0');
-                    let s = (recordingSeconds % 60).toString().padStart(2, '0');
-                    document.getElementById('recording-time').innerText = `${m}:${s}`;
-                }, 1000);
-            } else {
-                mediaRecorder.stop();
-                isRecording = false;
-                clearInterval(recordingTimer);
-                document.getElementById('recording-badge').classList.add('hidden');
-                document.getElementById('btn-record').className = "p-3.5 rounded-2xl bg-slate-800 text-slate-200 transition flex flex-col items-center border border-slate-700";
-            }
         }
     </script>
 </body>
