@@ -23,34 +23,39 @@
         .compass-rose { transition: transform 0.15s ease-out; }
         .leaflet-control-container { display: none !important; }
 
+        /* Mensaje Toast Sutil y Elegante */
         #toast-notification {
             visibility: hidden;
-            min-width: 250px;
-            background-color: rgba(33, 33, 33, 0.9);
-            color: #fff;
+            min-width: 200px;
+            background-color: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(51, 65, 85, 0.8);
+            color: #38bdf8;
             text-align: center;
-            border-radius: 8px;
-            padding: 12px;
+            border-radius: 9999px;
+            padding: 8px 18px;
             position: fixed;
             z-index: 9999;
             left: 50%;
-            bottom: 30px;
+            bottom: 24px;
             transform: translateX(-50%);
-            font-size: 14px;
-            box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
-            transition: visibility 0.3s, opacity 0.3s ease-in-out;
+            font-size: 13px;
+            font-weight: 700;
+            box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.5);
+            transition: visibility 0.25s, opacity 0.25s ease-in-out, transform 0.25s ease-in-out;
             opacity: 0;
+            pointer-events: none;
         }
 
         #toast-notification.show {
             visibility: visible;
             opacity: 1;
+            transform: translateX(-50%) translateY(-6px);
         }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans select-none overflow-x-hidden">
     <!-- Aviso Sutil Toast -->
-    <div id="toast-notification">¡Foto guardada con éxito en la galería!</div>
+    <div id="toast-notification">✓ Guardado en galería</div>
 
     <!-- Header Superior -->
     <header class="w-full bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-4 py-3.5 flex justify-between items-center z-20 shadow-lg">
@@ -78,12 +83,10 @@
             <div class="relative w-full h-full flex items-center justify-center">
                 <svg id="compass-rose" class="compass-rose w-full h-full" viewBox="0 0 100 100">
                     <circle cx="50" cy="50" r="46" fill="none" stroke="#475569" stroke-width="2" />
-                    
                     <text x="50" y="11" fill="#F87171" font-size="10" font-weight="900" text-anchor="middle">0° N</text>
                     <text x="89" y="53" fill="#94A3B8" font-size="9" font-weight="700" text-anchor="middle">90° E</text>
                     <text x="50" y="94" fill="#94A3B8" font-size="9" font-weight="700" text-anchor="middle">180° S</text>
                     <text x="11" y="53" fill="#94A3B8" font-size="9" font-weight="700" text-anchor="middle">270° O</text>
-
                     <polygon points="50,22 53,50 50,46" fill="#EF4444" />
                     <polygon points="50,22 47,50 50,46" fill="#DC2626" />
                     <polygon points="50,78 53,50 50,54" fill="#64748B" />
@@ -187,7 +190,6 @@
                     <input type="text" id="input-notes" value="Revisión técnica de infraestructura" oninput="updateSettings()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white text-base">
                 </div>
 
-                <!-- Ajuste de Tamaños -->
                 <div class="pt-3 border-t border-slate-800">
                     <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Tamaño de Objetos en Pantalla</h4>
                     <div class="space-y-3">
@@ -585,7 +587,6 @@
             }
         }
 
-        // Función auxiliar para dibujar tarjetas estilizadas con bordes en el Canvas
         function drawRoundedCard(ctx, x, y, width, height, radius, bgColor, borderColor) {
             ctx.save();
             ctx.beginPath();
@@ -617,7 +618,6 @@
             const boxWidth = canvas.width - (margin * 2);
             const cornerRadius = 24;
 
-            // DIBUJAR MINIMAPA CON BORDE REDONDEADO
             const showMap = document.getElementById('toggle-map').checked;
             if (showMap) {
                 const mapSize = 280;
@@ -667,7 +667,6 @@
                 } catch(e) {}
             }
 
-            // DIBUJAR BRÚJULA REDONDA EN FOTO
             const showCompass = document.getElementById('toggle-compass').checked;
             if (showCompass) {
                 const compSize = 280;
@@ -725,15 +724,12 @@
                 ctx.restore();
             }
 
-            // DIBUJAR RECUADRO INFERIOR CON CADA SECCIÓN DELIMITADA
             const bottomBoxHeight = 310;
             const bottomBoxY = canvas.height - bottomBoxHeight - margin;
             const innerPadding = 20;
 
-            // 1. Fondo principal transparente con borde
             drawRoundedCard(ctx, margin, bottomBoxY, boxWidth, bottomBoxHeight, cornerRadius, 'rgba(15, 23, 42, 0.92)', 'rgba(71, 85, 105, 0.8)');
 
-            // 2. Sección Superior (Empresa, Proyecto, Fecha y Hora)
             const topSecY = bottomBoxY + innerPadding;
             const topSecHeight = 75;
             drawRoundedCard(ctx, margin + innerPadding, topSecY, boxWidth - (innerPadding * 2), topSecHeight, 16, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
@@ -762,7 +758,6 @@
             ctx.fillStyle = '#CBD5E1';
             ctx.fillText(`${dateLetterStr} (${currentGMTOffset})`, margin + boxWidth - innerPadding - 20, topSecY + 58);
 
-            // 3. Sección Intermedia (Dirección y Clima)
             const midSecY = topSecY + topSecHeight + 12;
             const midSecHeight = 48;
             const showAddr = document.getElementById('toggle-address').checked;
@@ -789,12 +784,10 @@
                 ctx.fillText(`📍 ${currentAddress}`, margin + innerPadding + 15, midSecY + 30);
             }
 
-            // 4. Sección Inferior Izquierda (Coordenadas y Notas) + Derecha (Logotipo)
             const lowSecY = midSecY + midSecHeight + 12;
             const logoCardSize = 110;
             const leftBoxWidth = boxWidth - (innerPadding * 2) - logoCardSize - 15;
 
-            // Cajas separadas para Coordenadas y Notas
             const coordsY = lowSecY;
             const coordsHeight = 50;
             drawRoundedCard(ctx, margin + innerPadding, coordsY, leftBoxWidth, coordsHeight, 14, 'rgba(30, 41, 59, 0.9)', 'rgba(51, 65, 85, 0.8)');
@@ -818,7 +811,6 @@
             ctx.fillStyle = '#CBD5E1';
             ctx.fillText(`📄 ${document.getElementById('input-notes').value}`, margin + innerPadding + 15, notesY + 31);
 
-            // Tarjeta separada para el Logotipo
             const logoX = margin + boxWidth - innerPadding - logoCardSize;
             drawRoundedCard(ctx, logoX, lowSecY, logoCardSize, logoCardSize, 18, 'rgba(37, 99, 235, 0.95)', '#60A5FA');
 
@@ -852,7 +844,7 @@
                     });
                     savePersistentGallery();
                     updateGalleryUI();
-                    mostrarToast();
+                    mostrarToast("✓ Foto guardada");
                 };
             }, 'image/jpeg', 0.95);
         }
@@ -879,7 +871,7 @@
                         });
                         savePersistentGallery();
                         updateGalleryUI();
-                        mostrarToast();
+                        mostrarToast("✓ Video guardado");
                     };
                 };
                 mediaRecorder.start();
@@ -945,13 +937,21 @@
 
         function closeViewer() { document.getElementById('viewer-modal').classList.add('hidden'); currentViewerIndex = null; }
 
+        // DESCARGA DIRECTA SIN DIÁLOGOS NI CONFIRMACIONES DUPLICADAS
         function downloadCurrentMedia() {
             const item = galleryItems[currentViewerIndex];
             const a = document.createElement('a');
             a.href = item.url;
-            a.download = `Captura_GPS_${item.id}.${item.type === 'image' ? 'jpg' : 'webm'}`;
+            
+            // Nombre único usando milisegundos y un número aleatorio para que el navegador jamás pida confirmación de sobrescritura
+            const uniqueStamp = Date.now() + "_" + Math.floor(Math.random() * 1000);
+            a.download = `GPS_Cam_${uniqueStamp}.${item.type === 'image' ? 'jpg' : 'webm'}`;
+            
+            document.body.appendChild(a);
             a.click();
-            mostrarToast();
+            document.body.removeChild(a);
+
+            mostrarToast("✓ Guardado en teléfono");
         }
 
         function deleteCurrentMedia() {
@@ -959,14 +959,17 @@
             savePersistentGallery();
             closeViewer();
             updateGalleryUI();
+            mostrarToast("✓ Archivo eliminado");
         }
 
-        function mostrarToast() {
+        // Mensaje Flotante Sutil
+        function mostrarToast(mensaje) {
             var toast = document.getElementById("toast-notification");
+            if (mensaje) toast.innerText = mensaje;
             toast.className = "show";
             setTimeout(function() {
                 toast.className = toast.className.replace("show", "");
-            }, 3000);
+            }, 2000);
         }
     </script>
 </body>
