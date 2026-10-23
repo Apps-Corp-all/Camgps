@@ -68,24 +68,28 @@
         <video id="camera-feed" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover"></video>
         <canvas id="snapshot-canvas" class="hidden"></canvas>
 
-        <!-- Minimapa Arriba a la Izquierda -->
+        <!-- Minimapa Arriba a la Izquierda (Más alejado con zoom 15) -->
         <div id="box-map" class="absolute top-3 left-3 w-28 h-28 sm:w-32 sm:h-32 rounded-xl overflow-hidden border-2 border-blue-500 shadow-2xl bg-slate-950 pointer-events-none z-10 transition-all duration-200">
             <div id="mini-map" class="w-full h-full"></div>
         </div>
 
-        <!-- Rosa Náutica Arriba a la Derecha -->
+        <!-- Brújula Minimalista y Moderna Arriba a la Derecha -->
         <div id="box-compass-widget" class="absolute top-3 right-3 w-28 h-28 sm:w-32 sm:h-32 rounded-xl overflow-hidden border-2 border-amber-500 shadow-2xl bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center p-1.5 pointer-events-none z-10 transition-all duration-200">
-            <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center" id="compass-svg-container">
+            <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
                 <svg id="compass-rose" class="compass-rose w-full h-full" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="46" fill="none" stroke="#64748B" stroke-width="4" />
-                    <text x="50" y="18" fill="#EF4444" font-size="18" font-weight="bold" text-anchor="middle">N</text>
-                    <text x="50" y="92" fill="#94A3B8" font-size="14" font-weight="bold" text-anchor="middle">S</text>
-                    <text x="88" y="55" fill="#94A3B8" font-size="14" font-weight="bold" text-anchor="middle">E</text>
-                    <text x="12" y="55" fill="#94A3B8" font-size="14" font-weight="bold" text-anchor="middle">O</text>
-                    <polygon points="50,22 56,50 50,45" fill="#EF4444" />
-                    <polygon points="50,22 44,50 50,45" fill="#B91C1C" />
-                    <polygon points="50,78 56,50 50,55" fill="#94A3B8" />
-                    <polygon points="50,78 44,50 50,55" fill="#64748B" />
+                    <!-- Anillo sutil de fondo -->
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="#334155" stroke-width="3" />
+                    <!-- Puntos cardinales limpios -->
+                    <text x="50" y="16" fill="#F87171" font-size="16" font-weight="900" text-anchor="middle">N</text>
+                    <text x="50" y="90" fill="#94A3B8" font-size="13" font-weight="700" text-anchor="middle">S</text>
+                    <text x="86" y="54" fill="#94A3B8" font-size="13" font-weight="700" text-anchor="middle">E</text>
+                    <text x="14" y="54" fill="#94A3B8" font-size="13" font-weight="700" text-anchor="middle">O</text>
+                    <!-- Aguja moderna minimalista -->
+                    <polygon points="50,22 53,50 50,46" fill="#EF4444" />
+                    <polygon points="50,22 47,50 50,46" fill="#DC2626" />
+                    <polygon points="50,78 53,50 50,54" fill="#64748B" />
+                    <polygon points="50,78 47,50 50,54" fill="#475569" />
+                    <circle cx="50" cy="50" r="5" fill="#FBBF24" />
                 </svg>
             </div>
             <span id="hud-heading-cardinal" class="text-[10px] font-black text-amber-400 mt-0.5">N (0°)</span>
@@ -185,7 +189,7 @@
                     <input type="text" id="input-notes" value="Revisión técnica de infraestructura" oninput="updateSettings()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white text-base">
                 </div>
 
-                <!-- SECCIÓN NUEVA: Ajuste de Tamaños -->
+                <!-- Ajuste de Tamaños -->
                 <div class="pt-3 border-t border-slate-800">
                     <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Tamaño de Objetos en Pantalla</h4>
                     <div class="space-y-3">
@@ -279,7 +283,7 @@
         let videoStream = null;
         let currentLat = 15.5378, currentLon = -87.7063, currentAlt = 0.0, currentAccuracy = 5.0;
         let currentHeadingDegrees = 0, currentCardinal = 'N';
-        let currentAddress = 'Calculando ubicación...';
+        let currentAddress = 'Obteniendo ubicación...';
         let currentGMTOffset = '';
         let galleryItems = [], currentViewerIndex = null;
         let mediaRecorder = null, recordedChunks = [], isRecording = false;
@@ -333,7 +337,6 @@
                 customLogoImage.src = localStorage.getItem('gps_logo');
             }
 
-            // Cargar tamaños guardados
             if (localStorage.getItem('gps_size_map')) {
                 document.getElementById('slider-map-size').value = localStorage.getItem('gps_size_map');
             }
@@ -363,28 +366,23 @@
             const compassSize = document.getElementById('slider-compass-size').value;
             const panelScale = document.getElementById('slider-panel-scale').value;
 
-            // Guardar configuración en localStorage
             localStorage.setItem('gps_size_map', mapSize);
             localStorage.setItem('gps_size_compass', compassSize);
             localStorage.setItem('gps_scale_panel', panelScale);
 
-            // Actualizar etiquetas de texto
             document.getElementById('val-map-size').innerText = `${mapSize}px`;
             document.getElementById('val-compass-size').innerText = `${compassSize}px`;
             document.getElementById('val-panel-scale').innerText = `${panelScale}%`;
 
-            // Aplicar estilos al Minimapa
             const mapBox = document.getElementById('box-map');
             mapBox.style.width = `${mapSize}px`;
             mapBox.style.height = `${mapSize}px`;
             if (map) map.invalidateSize();
 
-            // Aplicar estilos a la Brújula
             const compassBox = document.getElementById('box-compass-widget');
             compassBox.style.width = `${compassSize}px`;
             compassBox.style.height = `${compassSize}px`;
 
-            // Aplicar escala al Panel Inferior
             const infoPanel = document.getElementById('box-info-panel');
             infoPanel.style.transform = `scale(${panelScale / 100})`;
         }
@@ -418,12 +416,13 @@
 
         function initMiniMap(lat, lon) {
             if (!map) {
+                // Zoom cambiado a 15 para que se vea más alejado y abarque más área
                 map = L.map('mini-map', {
                     zoomControl: false,
                     attributionControl: false,
                     dragging: false,
                     scrollWheelZoom: false
-                }).setView([lat, lon], 17);
+                }).setView([lat, lon], 15);
 
                 L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
                     maxZoom: 20,
@@ -431,38 +430,45 @@
                 }).addTo(map);
 
                 marker = L.circleMarker([lat, lon], {
-                    radius: 8,
+                    radius: 7,
                     color: '#ffffff',
                     fillColor: '#3b82f6',
                     fillOpacity: 1,
-                    weight: 3
+                    weight: 2
                 }).addTo(map);
             } else {
-                map.setView([lat, lon], 17);
+                map.setView([lat, lon], 15);
                 marker.setLatLng([lat, lon]);
             }
         }
 
         function initGeolocation() {
             if ('geolocation' in navigator) {
+                navigator.geolocation.getCurrentPosition((pos) => {
+                    updatePositionData(pos);
+                }, (err) => {}, { enableHighAccuracy: true, timeout: 10000 });
+
                 navigator.geolocation.watchPosition((pos) => {
-                    currentLat = pos.coords.latitude;
-                    currentLon = pos.coords.longitude;
-                    currentAlt = pos.coords.altitude || 0.0;
-                    currentAccuracy = pos.coords.accuracy || 5.0;
-
-                    document.getElementById('hud-coords').innerText = `Lat: ${currentLat.toFixed(4)}, Lon: ${currentLon.toFixed(4)}`;
-                    document.getElementById('hud-altitude').innerText = `Alt: ${Math.round(currentAlt)}m (±${Math.round(currentAccuracy)}m)`;
-
-                    if (map && marker) {
-                        map.setView([currentLat, currentLon], 17);
-                        marker.setLatLng([currentLat, currentLon]);
-                    }
-
-                    fetchAddress(currentLat, currentLon);
-
-                }, () => {}, { enableHighAccuracy: true });
+                    updatePositionData(pos);
+                }, (err) => {}, { enableHighAccuracy: true, maximumAge: 0 });
             }
+        }
+
+        function updatePositionData(pos) {
+            currentLat = pos.coords.latitude;
+            currentLon = pos.coords.longitude;
+            currentAlt = pos.coords.altitude || 0.0;
+            currentAccuracy = pos.coords.accuracy || 5.0;
+
+            document.getElementById('hud-coords').innerText = `Lat: ${currentLat.toFixed(4)}, Lon: ${currentLon.toFixed(4)}`;
+            document.getElementById('hud-altitude').innerText = `Alt: ${Math.round(currentAlt)}m (±${Math.round(currentAccuracy)}m)`;
+
+            if (map && marker) {
+                map.setView([currentLat, currentLon], 15);
+                marker.setLatLng([currentLat, currentLon]);
+            }
+
+            fetchAddress(currentLat, currentLon);
         }
 
         async function fetchAddress(lat, lon) {
@@ -573,7 +579,7 @@
                 const mapY = margin;
 
                 try {
-                    const tileZ = 17;
+                    const tileZ = 15; // Zoom alejado también en la foto capturada
                     const xTile = Math.floor((currentLon + 180) / 360 * Math.pow(2, tileZ));
                     const yTile = Math.floor((1 - Math.log(Math.tan(currentLat * Math.PI / 180) + 1 / Math.cos(currentLat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, tileZ));
                     const subdomains = ['mt0', 'mt1', 'mt2', 'mt3'];
@@ -641,8 +647,8 @@
 
                 ctx.beginPath();
                 ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
-                ctx.lineWidth = 6;
-                ctx.strokeStyle = '#64748B';
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#334155';
                 ctx.stroke();
 
                 ctx.save();
@@ -650,22 +656,27 @@
                 ctx.rotate((currentHeadingDegrees * Math.PI) / 180);
 
                 ctx.beginPath();
-                ctx.moveTo(0, -65);
-                ctx.lineTo(14, 0);
+                ctx.moveTo(0, -60);
+                ctx.lineTo(12, 0);
                 ctx.lineTo(0, 35);
                 ctx.fillStyle = '#EF4444';
                 ctx.fill();
 
                 ctx.beginPath();
-                ctx.moveTo(0, 65);
-                ctx.lineTo(-14, 0);
+                ctx.moveTo(0, 60);
+                ctx.lineTo(-12, 0);
                 ctx.lineTo(0, 35);
-                ctx.fillStyle = '#94A3B8';
+                ctx.fillStyle = '#64748B';
                 ctx.fill();
                 ctx.restore();
 
+                ctx.beginPath();
+                ctx.arc(cx, cy, 12, 0, 2 * Math.PI);
+                ctx.fillStyle = '#FBBF24';
+                ctx.fill();
+
                 ctx.font = 'bold 26px sans-serif';
-                ctx.fillStyle = '#EF4444';
+                ctx.fillStyle = '#F87171';
                 ctx.textAlign = 'center';
                 ctx.fillText('N', cx, cy - radius + 22);
                 ctx.fillStyle = '#94A3B8';
