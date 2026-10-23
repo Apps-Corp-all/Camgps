@@ -448,15 +448,21 @@
 
         function initGeolocation() {
             if ('geolocation' in navigator) {
+                // Forzar carga inmediata con valores por defecto para que nunca se quede en "Obteniendo..."
+                let plusCodeInit = encodePlusCode(currentLat, currentLon);
+                currentAddress = `${plusCodeInit}, Lat: ${currentLat.toFixed(4)}, Lon: ${currentLon.toFixed(4)}`;
+                document.getElementById('hud-address').innerText = currentAddress;
+                document.getElementById('hud-coords').innerText = `Lat: ${currentLat.toFixed(4)}, Lon: ${currentLon.toFixed(4)}`;
+
                 navigator.geolocation.getCurrentPosition((pos) => {
                     updatePositionData(pos);
                 }, (err) => {
-                    updatePositionData({ coords: { latitude: currentLat, longitude: currentLon, altitude: 0, accuracy: 10 } });
-                }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 5000 });
+                    console.log("GPS Timeout o error, usando fallback.");
+                }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 });
 
                 navigator.geolocation.watchPosition((pos) => {
                     updatePositionData(pos);
-                }, (err) => {}, { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 });
+                }, (err) => {}, { enableHighAccuracy: true, maximumAge: 5000, timeout: 5000 });
             }
         }
 
@@ -499,7 +505,7 @@
 
         async function fetchAddress(lat, lon) {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 2500);
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
 
             try {
                 const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`, { signal: controller.signal });
@@ -523,14 +529,10 @@
 
                 if (mainAddress) {
                     currentAddress = `${plusCode}, ${mainAddress}`;
-                } else {
-                    currentAddress = `${plusCode}, Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`;
+                    document.getElementById('hud-address').innerText = currentAddress;
                 }
-                document.getElementById('hud-address').innerText = currentAddress;
             } catch (e) {
-                let plusCode = encodePlusCode(lat, lon);
-                currentAddress = `${plusCode}, Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`;
-                document.getElementById('hud-address').innerText = currentAddress;
+                // Mantiene el plus code con coordenadas si falla la red
             }
         }
 
