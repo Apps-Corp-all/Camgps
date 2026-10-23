@@ -22,41 +22,9 @@
     <style>
         .compass-rose { transition: transform 0.15s ease-out; }
         .leaflet-control-container { display: none !important; }
-
-        /* Mensaje Toast Sutil */
-        #toast-notification {
-            visibility: hidden;
-            min-width: 200px;
-            background-color: rgba(15, 23, 42, 0.95);
-            border: 1px solid rgba(51, 65, 85, 0.8);
-            color: #38bdf8;
-            text-align: center;
-            border-radius: 9999px;
-            padding: 8px 18px;
-            position: fixed;
-            z-index: 9999;
-            left: 50%;
-            bottom: 24px;
-            transform: translateX(-50%);
-            font-size: 13px;
-            font-weight: 700;
-            box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.5);
-            transition: visibility 0.25s, opacity 0.25s ease-in-out, transform 0.25s ease-in-out;
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        #toast-notification.show {
-            visibility: visible;
-            opacity: 1;
-            transform: translateX(-50%) translateY(-6px);
-        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans select-none overflow-x-hidden">
-    <!-- Aviso Sutil Toast -->
-    <div id="toast-notification">✓ Guardado en Galería</div>
-
     <!-- Header Superior -->
     <header class="w-full bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex justify-between items-center z-20 shadow-lg">
         <div class="flex items-center space-x-3">
@@ -287,7 +255,6 @@
                 videoStream.getTracks().forEach(track => track.stop());
             }
             await initCamera();
-            mostrarToast(currentFacingMode === 'user' ? "📷 Cámara Frontal" : "📷 Cámara Trasera");
         }
 
         async function initCamera() {
@@ -429,7 +396,6 @@
                     scrollWheelZoom: false
                 }).setView([lat, lon], 16);
 
-                // Capa satelital interactiva mediante ArcGIS World Imagery
                 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                     maxZoom: 19,
                     crossOrigin: true
@@ -621,14 +587,31 @@
             ctx.restore();
         }
 
-        function saveOrShareBlob(blob, fileType) {
+        // FUNCIÓN DE GUARDADO SILENCIOSO SIN MENSAJES DE DESCARGA
+        async function saveOrShareBlob(blob, fileType) {
             const ext = fileType === 'image' ? 'jpg' : 'webm';
             const fileName = `GPS_Cam_${Date.now()}.${ext}`;
-            
+            const file = new File([blob], fileName, { type: blob.type });
+
+            // Si el dispositivo móvil soporta compartir de forma nativa, abre el selector limpio del sistema operativo sin mostrar descargas
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Captura GPS Pro'
+                    });
+                    return;
+                } catch (err) {
+                    if (err.name === 'AbortError') return; // Si el usuario cancela, no hace nada
+                }
+            }
+
+            // Método silencioso alternativo sin prompts molestos de descarga
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             a.download = fileName;
+            a.style.display = 'none';
             document.body.appendChild(a);
             a.click();
             
@@ -636,8 +619,6 @@
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
             }, 100);
-
-            mostrarToast("✓ Guardado en Galería");
         }
 
         // DIBUJO SÍNCRONO DEL HUD CON MINIMAPA SATELITAL
@@ -911,15 +892,6 @@
                 document.getElementById('recording-badge').classList.add('hidden');
                 document.getElementById('btn-record').className = "p-3.5 rounded-2xl bg-slate-800 text-slate-200 transition flex flex-col items-center border border-slate-700";
             }
-        }
-
-        function mostrarToast(mensaje) {
-            var toast = document.getElementById("toast-notification");
-            if (mensaje) toast.innerText = mensaje;
-            toast.className = "show";
-            setTimeout(function() {
-                toast.className = toast.className.replace("show", "");
-            }, 2000);
         }
     </script>
 </body>
