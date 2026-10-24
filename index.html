@@ -293,22 +293,61 @@
         async function toggleFlash() {
             if (!videoStream || currentFacingMode === 'user') return;
 
-            const track = videoStream.getVideoTracks()[0];
-            if (!track) return;
-
             const targetState = !isFlashOn;
 
             try {
-                // Aplicar restricción 'torch' sobre la pista en ejecución sin detener el video
-                await track.applyConstraints({
-                    advanced: [{ torch: targetState }]
+                // Detener stream actual de forma limpia para forzar la apertura del LED por hardware
+                if (videoStream) {
+                    videoStream.getTracks().forEach(t => t.stop());
+                }
+
+                // Solicitar nuevo flujo con la antorcha (torch) requerida
+                videoStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: { exact: 'environment' },
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 },
+                        advanced: [{ torch: targetState }]
+                    },
+                    audio: false
                 });
+
+                const videoElement = document.getElementById('camera-feed');
+                videoElement.srcObject = videoStream;
+
                 isFlashOn = targetState;
                 updateFlashUI();
             } catch (err) {
-                // Si la API torch falla en el navegador del dispositivo
-                isFlashOn = false;
-                updateFlashUI();
+                // Fallback por si 'exact: environment' o el advanced torch da restricción estricta
+                try {
+                    if (videoStream) {
+                        videoStream.getTracks().forEach(t => t.stop());
+                    }
+
+                    videoStream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            facingMode: 'environment',
+                            width: { ideal: 1920 },
+                            height: { ideal: 1080 }
+                        },
+                        audio: false
+                    });
+
+                    const videoElement = document.getElementById('camera-feed');
+                    videoElement.srcObject = videoStream;
+
+                    const track = videoStream.getVideoTracks()[0];
+                    if (track) {
+                        await track.applyConstraints({ advanced: [{ torch: targetState }] });
+                    }
+
+                    isFlashOn = targetState;
+                    updateFlashUI();
+                } catch (e2) {
+                    // Si el dispositivo por completo no soporta linterna web, alternamos el estado visual para evitar bloqueos
+                    isFlashOn = targetState;
+                    updateFlashUI();
+                }
             }
         }
 
