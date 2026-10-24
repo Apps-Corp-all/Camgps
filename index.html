@@ -294,12 +294,24 @@
             try {
                 const videoConstraints = currentFacingMode === 'user' 
                     ? { facingMode: 'user' } 
-                    : { facingMode: 'environment', width: { ideal: 3840 }, height: { ideal: 2160 } };
+                    : { 
+                        facingMode: { exact: 'environment' },
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                      };
 
-                videoStream = await navigator.mediaDevices.getUserMedia({
-                    video: videoConstraints,
-                    audio: false
-                });
+                try {
+                    videoStream = await navigator.mediaDevices.getUserMedia({
+                        video: videoConstraints,
+                        audio: false
+                    });
+                } catch (e) {
+                    videoStream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: currentFacingMode },
+                        audio: false
+                    });
+                }
+
                 document.getElementById('camera-feed').srcObject = videoStream;
             } catch (err) {}
         }
@@ -314,16 +326,34 @@
             if (!track) return;
 
             try {
-                isFlashOn = !isFlashOn;
+                const newState = !isFlashOn;
+                
+                // Aplicar restricción de antorcha directamente
                 await track.applyConstraints({
-                    advanced: [{ torch: isFlashOn }]
+                    advanced: [{ torch: newState }]
                 });
+
+                isFlashOn = newState;
                 updateFlashUI();
                 showToast(isFlashOn ? "Linterna ACTIVADA" : "Linterna DESACTIVADA");
             } catch (err) {
+                try {
+                    // Intento secundario compatible con navegadores móviles estrictos
+                    const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+                    if ('torch' in capabilities || 'fillLightMode' in capabilities) {
+                        isFlashOn = !isFlashOn;
+                        await track.applyConstraints({
+                            advanced: [{ fillLightMode: isFlashOn ? 'flash' : 'off' }]
+                        });
+                        updateFlashUI();
+                        showToast(isFlashOn ? "Flash ACTIVADO" : "Flash DESACTIVADO");
+                        return;
+                    }
+                } catch (e2) {}
+
                 isFlashOn = false;
                 updateFlashUI();
-                showToast("Flash no soportado en este dispositivo");
+                showToast("Hardware de flash no accesible en el navegador");
             }
         }
 
