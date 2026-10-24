@@ -41,12 +41,6 @@
         <video id="camera-feed" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover bg-black"></video>
         <canvas id="snapshot-canvas" class="hidden"></canvas>
 
-        <!-- Toast Sutil de Notificación -->
-        <div id="toast-msg" class="absolute top-16 left-1/2 -translate-x-1/2 bg-slate-900/90 text-slate-100 text-xs font-bold px-4 py-2 rounded-full border border-slate-700 shadow-xl opacity-0 pointer-events-none transition-all duration-300 z-30 flex items-center space-x-2">
-            <i data-lucide="info" class="w-4 h-4 text-amber-400"></i>
-            <span id="toast-text">Notificación</span>
-        </div>
-
         <!-- Minimapa Arriba a la Izquierda -->
         <div id="box-map" class="absolute top-3 left-3 w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden border-2 border-blue-500 shadow-2xl bg-slate-950 pointer-events-none z-10 transition-all duration-200">
             <div id="mini-map" class="w-full h-full"></div>
@@ -241,7 +235,6 @@
         let videoStream = null;
         let currentFacingMode = 'environment';
         let isFlashOn = false;
-        let toastTimeout = null;
         let currentLat = 15.5378, currentLon = -87.7063, currentAlt = 0.0, currentAccuracy = 5.0;
         let currentHeadingDegrees = 0, currentCardinal = 'N';
         let currentAddress = 'Obteniendo ubicación...';
@@ -265,21 +258,6 @@
             updateClock();
         });
 
-        function showToast(text) {
-            const toast = document.getElementById('toast-msg');
-            const toastText = document.getElementById('toast-text');
-            toastText.innerText = text;
-
-            toast.classList.remove('opacity-0', 'pointer-events-none');
-            toast.classList.add('opacity-100');
-
-            if (toastTimeout) clearTimeout(toastTimeout);
-            toastTimeout = setTimeout(() => {
-                toast.classList.remove('opacity-100');
-                toast.classList.add('opacity-0', 'pointer-events-none');
-            }, 2000);
-        }
-
         async function switchCamera() {
             currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
             isFlashOn = false;
@@ -292,68 +270,63 @@
 
         async function initCamera() {
             try {
-                const videoConstraints = currentFacingMode === 'user' 
-                    ? { facingMode: 'user' } 
-                    : { 
-                        facingMode: { exact: 'environment' },
+                const constraints = {
+                    video: {
+                        facingMode: currentFacingMode === 'user' ? 'user' : { ideal: 'environment' },
                         width: { ideal: 1920 },
                         height: { ideal: 1080 }
-                      };
+                    },
+                    audio: false
+                };
 
-                try {
-                    videoStream = await navigator.mediaDevices.getUserMedia({
-                        video: videoConstraints,
-                        audio: false
-                    });
-                } catch (e) {
-                    videoStream = await navigator.mediaDevices.getUserMedia({
-                        video: { facingMode: currentFacingMode },
-                        audio: false
-                    });
-                }
-
+                videoStream = await navigator.mediaDevices.getUserMedia(constraints);
                 document.getElementById('camera-feed').srcObject = videoStream;
-            } catch (err) {}
+            } catch (err) {
+                try {
+                    videoStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                    document.getElementById('camera-feed').srcObject = videoStream;
+                } catch (e) {}
+            }
         }
 
         async function toggleFlash() {
-            if (!videoStream || currentFacingMode === 'user') {
-                showToast("Flash no disponible en cámara frontal");
-                return;
-            }
+            if (!videoStream || currentFacingMode === 'user') return;
 
             const track = videoStream.getVideoTracks()[0];
             if (!track) return;
 
+            const targetState = !isFlashOn;
+
+            // Método 1: Restricción directa sobre la pista actual
             try {
-                const newState = !isFlashOn;
-                
-                // Aplicar restricción de antorcha directamente
                 await track.applyConstraints({
-                    advanced: [{ torch: newState }]
+                    advanced: [{ torch: targetState }]
+                });
+                isFlashOn = targetState;
+                updateFlashUI();
+                return;
+            } catch (e1) {}
+
+            // Método 2: Reiniciar stream con restricción explícita de antorcha
+            try {
+                if (videoStream) {
+                    videoStream.getTracks().forEach(t => t.stop());
+                }
+
+                videoStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: { ideal: 'environment' },
+                        advanced: [{ torch: targetState }]
+                    },
+                    audio: false
                 });
 
-                isFlashOn = newState;
+                document.getElementById('camera-feed').srcObject = videoStream;
+                isFlashOn = targetState;
                 updateFlashUI();
-                showToast(isFlashOn ? "Linterna ACTIVADA" : "Linterna DESACTIVADA");
-            } catch (err) {
-                try {
-                    // Intento secundario compatible con navegadores móviles estrictos
-                    const capabilities = track.getCapabilities ? track.getCapabilities() : {};
-                    if ('torch' in capabilities || 'fillLightMode' in capabilities) {
-                        isFlashOn = !isFlashOn;
-                        await track.applyConstraints({
-                            advanced: [{ fillLightMode: isFlashOn ? 'flash' : 'off' }]
-                        });
-                        updateFlashUI();
-                        showToast(isFlashOn ? "Flash ACTIVADO" : "Flash DESACTIVADO");
-                        return;
-                    }
-                } catch (e2) {}
-
+            } catch (e2) {
                 isFlashOn = false;
                 updateFlashUI();
-                showToast("Hardware de flash no accesible en el navegador");
             }
         }
 
