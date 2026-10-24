@@ -263,7 +263,7 @@
             try {
                 const videoConstraints = currentFacingMode === 'user' 
                     ? { facingMode: 'user' } 
-                    : { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } };
+                    : { facingMode: 'environment', width: { ideal: 3840 }, height: { ideal: 2160 } };
 
                 videoStream = await navigator.mediaDevices.getUserMedia({
                     video: videoConstraints,
@@ -631,9 +631,9 @@
             }, 100);
         }
 
-        function drawHudOnCanvas(ctx, width, height) {
-            // Escala relativa al ancho real para mantener proporciones idénticas a la pantalla
-            const scale = width / 400; 
+        function drawHudOnCanvas(ctx, width, height, screenWidth) {
+            // Escala adaptada a la resolución HD/4K real del sensor respecto al ancho visible del celular
+            const scale = width / (screenWidth || 400); 
             const margin = 12 * scale;
             
             const customWidthPercent = (parseInt(document.getElementById('slider-panel-width').value) || 100) / 100;
@@ -646,7 +646,7 @@
             // 1. DIBUJAR MINIMAPA
             const showMap = document.getElementById('toggle-map').checked;
             if (showMap) {
-                const mapSize = (parseInt(document.getElementById('slider-map-size').value) || 112) * (width / 400);
+                const mapSize = (parseInt(document.getElementById('slider-map-size').value) || 112) * scale;
                 const mapX = margin;
                 const mapY = margin;
 
@@ -682,7 +682,7 @@
             // 2. Brújula
             const showCompass = document.getElementById('toggle-compass').checked;
             if (showCompass) {
-                const compSize = (parseInt(document.getElementById('slider-compass-size').value) || 112) * (width / 400);
+                const compSize = (parseInt(document.getElementById('slider-compass-size').value) || 112) * scale;
                 const compX = width - margin - compSize;
                 const compY = margin;
 
@@ -850,48 +850,54 @@
             ctx.restore();
         }
 
-        // CAPTURA DE FOTO INSTANTÁNEA (Mismo encuadre que el visor visible)
+        // CAPTURA DE FOTO INSTANTÁNEA EN RESOLUCIÓN MÁXIMA
         function capturePhoto() {
             const video = document.getElementById('camera-feed');
             const container = document.getElementById('camera-container');
             const canvas = document.getElementById('snapshot-canvas');
             
-            const containerWidth = container.clientWidth;
-            const containerHeight = container.clientHeight;
+            const screenWidth = container.clientWidth;
+            const screenHeight = container.clientHeight;
 
-            canvas.width = containerWidth;
-            canvas.height = containerHeight;
+            // Obtener resolución real nativa del sensor del celular (ej. 1080x1920 / 2160x3840)
+            const nativeWidth = video.videoWidth || 1080;
+            const nativeHeight = video.videoHeight || 1920;
 
-            const ctx = canvas.getContext('2d');
+            const containerRatio = screenWidth / screenHeight;
+            const videoRatio = nativeWidth / nativeHeight;
 
-            // Calcular el encuadre object-cover exacto
-            const videoWidth = video.videoWidth || containerWidth;
-            const videoHeight = video.videoHeight || containerHeight;
-
-            const videoRatio = videoWidth / videoHeight;
-            const containerRatio = containerWidth / containerHeight;
-
-            let sourceX = 0, sourceY = 0, sourceWidth = videoWidth, sourceHeight = videoHeight;
+            let sourceX = 0, sourceY = 0, sourceWidth = nativeWidth, sourceHeight = nativeHeight;
 
             if (videoRatio > containerRatio) {
-                sourceWidth = videoHeight * containerRatio;
-                sourceX = (videoWidth - sourceWidth) / 2;
+                sourceWidth = nativeHeight * containerRatio;
+                sourceX = (nativeWidth - sourceWidth) / 2;
             } else {
-                sourceHeight = videoWidth / containerRatio;
-                sourceY = (videoHeight - sourceHeight) / 2;
+                sourceHeight = nativeWidth / containerRatio;
+                sourceY = (nativeHeight - sourceHeight) / 2;
             }
 
-            // Dibujar la imagen recortada igual a la pantalla
-            ctx.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, containerWidth, containerHeight);
+            // Dimensionar canvas con los megapíxeles nativos para cero pixeleado
+            const targetWidth = sourceWidth;
+            const targetHeight = sourceHeight;
 
-            // Dibujar los widgets adaptados al tamaño real
-            drawHudOnCanvas(ctx, containerWidth, containerHeight);
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+
+            // Dibujar la foto nítida de la cámara
+            ctx.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, targetWidth, targetHeight);
+
+            // Dibujar el HUD con escalado perfecto para alta definición
+            drawHudOnCanvas(ctx, targetWidth, targetHeight, screenWidth);
 
             canvas.toBlob((blob) => {
                 if (blob) {
                     saveOrShareBlob(blob);
                 }
-            }, 'image/jpeg', 0.95);
+            }, 'image/jpeg', 0.98);
         }
     </script>
 </body>
