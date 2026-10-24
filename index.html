@@ -293,61 +293,20 @@
         async function toggleFlash() {
             if (!videoStream || currentFacingMode === 'user') return;
 
+            const track = videoStream.getVideoTracks()[0];
+            if (!track) return;
+
             const targetState = !isFlashOn;
 
             try {
-                // Detener stream actual de forma limpia para forzar la apertura del LED por hardware
-                if (videoStream) {
-                    videoStream.getTracks().forEach(t => t.stop());
-                }
-
-                // Solicitar nuevo flujo con la antorcha (torch) requerida
-                videoStream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: { exact: 'environment' },
-                        width: { ideal: 1920 },
-                        height: { ideal: 1080 },
-                        advanced: [{ torch: targetState }]
-                    },
-                    audio: false
+                await track.applyConstraints({
+                    advanced: [{ torch: targetState }]
                 });
-
-                const videoElement = document.getElementById('camera-feed');
-                videoElement.srcObject = videoStream;
-
                 isFlashOn = targetState;
                 updateFlashUI();
             } catch (err) {
-                // Fallback por si 'exact: environment' o el advanced torch da restricción estricta
-                try {
-                    if (videoStream) {
-                        videoStream.getTracks().forEach(t => t.stop());
-                    }
-
-                    videoStream = await navigator.mediaDevices.getUserMedia({
-                        video: {
-                            facingMode: 'environment',
-                            width: { ideal: 1920 },
-                            height: { ideal: 1080 }
-                        },
-                        audio: false
-                    });
-
-                    const videoElement = document.getElementById('camera-feed');
-                    videoElement.srcObject = videoStream;
-
-                    const track = videoStream.getVideoTracks()[0];
-                    if (track) {
-                        await track.applyConstraints({ advanced: [{ torch: targetState }] });
-                    }
-
-                    isFlashOn = targetState;
-                    updateFlashUI();
-                } catch (e2) {
-                    // Si el dispositivo por completo no soporta linterna web, alternamos el estado visual para evitar bloqueos
-                    isFlashOn = targetState;
-                    updateFlashUI();
-                }
+                isFlashOn = targetState;
+                updateFlashUI();
             }
         }
 
@@ -944,12 +903,22 @@
             ctx.restore();
         }
 
-        // CAPTURA DE FOTO INSTANTÁNEA EN RESOLUCIÓN MÁXIMA
-        function capturePhoto() {
+        // CAPTURA DE FOTO INSTANTÁNEA EN RESOLUCIÓN MÁXIMA CON DISPARO DE FLASH FÍSICO
+        async function capturePhoto() {
             const video = document.getElementById('camera-feed');
             const container = document.getElementById('camera-container');
             const canvas = document.getElementById('snapshot-canvas');
             
+            const track = videoStream ? videoStream.getVideoTracks()[0] : null;
+
+            // Forzar el encendido del flash físico justo al tomar la foto
+            if (track && currentFacingMode === 'environment') {
+                try {
+                    await track.applyConstraints({ advanced: [{ torch: true }] });
+                    await new Promise(resolve => setTimeout(resolve, 150)); // Breve pausa para iluminar
+                } catch (e) {}
+            }
+
             const screenWidth = container.clientWidth;
             const screenHeight = container.clientHeight;
 
@@ -982,6 +951,13 @@
             ctx.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, targetWidth, targetHeight);
 
             drawHudOnCanvas(ctx, targetWidth, targetHeight, screenWidth);
+
+            // Apagar el flash físico inmediatamente después de capturar (si el usuario no lo tenía encendido de forma fija)
+            if (track && currentFacingMode === 'environment' && !isFlashOn) {
+                try {
+                    await track.applyConstraints({ advanced: [{ torch: false }] });
+                } catch (e) {}
+            }
 
             canvas.toBlob((blob) => {
                 if (blob) {
