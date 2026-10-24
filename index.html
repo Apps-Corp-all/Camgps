@@ -299,36 +299,16 @@
             const targetState = !isFlashOn;
 
             try {
-                // Activar o desactivar linterna de forma avanzada
+                // Aplicar restricción 'torch' sobre la pista en ejecución sin detener el video
                 await track.applyConstraints({
                     advanced: [{ torch: targetState }]
                 });
                 isFlashOn = targetState;
                 updateFlashUI();
             } catch (err) {
-                // Si el hardware requiere reiniciar el stream con la antorcha incluida para mantener la estabilidad:
-                try {
-                    videoStream.getTracks().forEach(t => t.stop());
-
-                    videoStream = await navigator.mediaDevices.getUserMedia({
-                        video: {
-                            facingMode: 'environment',
-                            width: { ideal: 1920 },
-                            height: { ideal: 1080 },
-                            advanced: [{ torch: targetState }]
-                        },
-                        audio: false
-                    });
-
-                    const videoElement = document.getElementById('camera-feed');
-                    videoElement.srcObject = videoStream;
-                    
-                    isFlashOn = targetState;
-                    updateFlashUI();
-                } catch (e2) {
-                    isFlashOn = false;
-                    updateFlashUI();
-                }
+                // Si la API torch falla en el navegador del dispositivo
+                isFlashOn = false;
+                updateFlashUI();
             }
         }
 
