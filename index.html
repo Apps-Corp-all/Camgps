@@ -272,7 +272,7 @@
             try {
                 const constraints = {
                     video: {
-                        facingMode: currentFacingMode === 'user' ? 'user' : { ideal: 'environment' },
+                        facingMode: currentFacingMode === 'user' ? 'user' : 'environment',
                         width: { ideal: 1920 },
                         height: { ideal: 1080 }
                     },
@@ -280,7 +280,8 @@
                 };
 
                 videoStream = await navigator.mediaDevices.getUserMedia(constraints);
-                document.getElementById('camera-feed').srcObject = videoStream;
+                const videoElement = document.getElementById('camera-feed');
+                videoElement.srcObject = videoStream;
             } catch (err) {
                 try {
                     videoStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
@@ -297,36 +298,37 @@
 
             const targetState = !isFlashOn;
 
-            // Método 1: Restricción directa sobre la pista actual
             try {
+                // Activar o desactivar linterna de forma avanzada
                 await track.applyConstraints({
                     advanced: [{ torch: targetState }]
                 });
                 isFlashOn = targetState;
                 updateFlashUI();
-                return;
-            } catch (e1) {}
-
-            // Método 2: Reiniciar stream con restricción explícita de antorcha
-            try {
-                if (videoStream) {
+            } catch (err) {
+                // Si el hardware requiere reiniciar el stream con la antorcha incluida para mantener la estabilidad:
+                try {
                     videoStream.getTracks().forEach(t => t.stop());
+
+                    videoStream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            facingMode: 'environment',
+                            width: { ideal: 1920 },
+                            height: { ideal: 1080 },
+                            advanced: [{ torch: targetState }]
+                        },
+                        audio: false
+                    });
+
+                    const videoElement = document.getElementById('camera-feed');
+                    videoElement.srcObject = videoStream;
+                    
+                    isFlashOn = targetState;
+                    updateFlashUI();
+                } catch (e2) {
+                    isFlashOn = false;
+                    updateFlashUI();
                 }
-
-                videoStream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: { ideal: 'environment' },
-                        advanced: [{ torch: targetState }]
-                    },
-                    audio: false
-                });
-
-                document.getElementById('camera-feed').srcObject = videoStream;
-                isFlashOn = targetState;
-                updateFlashUI();
-            } catch (e2) {
-                isFlashOn = false;
-                updateFlashUI();
             }
         }
 
