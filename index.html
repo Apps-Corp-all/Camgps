@@ -299,11 +299,28 @@
             const targetState = !isFlashOn;
 
             try {
+                // Soporte avanzado mediante ImageCapture para dispositivos móviles modernos
+                if (window.ImageCapture) {
+                    const imageCapture = new ImageCapture(track);
+                    const capabilities = await imageCapture.getPhotoCapabilities().catch(() => null);
+                    
+                    if (capabilities && 'fillLightMode' in capabilities) {
+                        await track.applyConstraints({
+                            advanced: [{ fillLightMode: targetState ? 'flash' : 'off' }]
+                        });
+                        isFlashOn = targetState;
+                        updateFlashUI();
+                        return;
+                    }
+                }
+
+                // Método estándar de linterna continua (torch)
                 await track.applyConstraints({
                     advanced: [{ torch: targetState }]
                 });
                 isFlashOn = targetState;
                 updateFlashUI();
+
             } catch (err) {
                 isFlashOn = targetState;
                 updateFlashUI();
@@ -914,7 +931,17 @@
             // Forzar el encendido del flash físico justo al tomar la foto
             if (track && currentFacingMode === 'environment') {
                 try {
-                    await track.applyConstraints({ advanced: [{ torch: true }] });
+                    if (window.ImageCapture) {
+                        const imageCapture = new ImageCapture(track);
+                        const capabilities = await imageCapture.getPhotoCapabilities().catch(() => null);
+                        if (capabilities && 'fillLightMode' in capabilities) {
+                            await track.applyConstraints({ advanced: [{ fillLightMode: 'flash' }] });
+                        } else {
+                            await track.applyConstraints({ advanced: [{ torch: true }] });
+                        }
+                    } else {
+                        await track.applyConstraints({ advanced: [{ torch: true }] });
+                    }
                     await new Promise(resolve => setTimeout(resolve, 150)); // Breve pausa para iluminar
                 } catch (e) {}
             }
@@ -955,7 +982,17 @@
             // Apagar el flash físico inmediatamente después de capturar (si el usuario no lo tenía encendido de forma fija)
             if (track && currentFacingMode === 'environment' && !isFlashOn) {
                 try {
-                    await track.applyConstraints({ advanced: [{ torch: false }] });
+                    if (window.ImageCapture) {
+                        const imageCapture = new ImageCapture(track);
+                        const capabilities = await imageCapture.getPhotoCapabilities().catch(() => null);
+                        if (capabilities && 'fillLightMode' in capabilities) {
+                            await track.applyConstraints({ advanced: [{ fillLightMode: 'off' }] });
+                        } else {
+                            await track.applyConstraints({ advanced: [{ torch: false }] });
+                        }
+                    } else {
+                        await track.applyConstraints({ advanced: [{ torch: false }] });
+                    }
                 } catch (e) {}
             }
 
