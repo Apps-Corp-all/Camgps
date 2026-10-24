@@ -41,6 +41,12 @@
         <video id="camera-feed" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover bg-black"></video>
         <canvas id="snapshot-canvas" class="hidden"></canvas>
 
+        <!-- Toast Sutil de Notificación -->
+        <div id="toast-msg" class="absolute top-16 left-1/2 -translate-x-1/2 bg-slate-900/90 text-slate-100 text-xs font-bold px-4 py-2 rounded-full border border-slate-700 shadow-xl opacity-0 pointer-events-none transition-all duration-300 z-30 flex items-center space-x-2">
+            <i data-lucide="info" class="w-4 h-4 text-amber-400"></i>
+            <span id="toast-text">Notificación</span>
+        </div>
+
         <!-- Minimapa Arriba a la Izquierda -->
         <div id="box-map" class="absolute top-3 left-3 w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden border-2 border-blue-500 shadow-2xl bg-slate-950 pointer-events-none z-10 transition-all duration-200">
             <div id="mini-map" class="w-full h-full"></div>
@@ -235,6 +241,7 @@
         let videoStream = null;
         let currentFacingMode = 'environment';
         let isFlashOn = false;
+        let toastTimeout = null;
         let currentLat = 15.5378, currentLon = -87.7063, currentAlt = 0.0, currentAccuracy = 5.0;
         let currentHeadingDegrees = 0, currentCardinal = 'N';
         let currentAddress = 'Obteniendo ubicación...';
@@ -257,6 +264,21 @@
             setInterval(updateClock, 1000);
             updateClock();
         });
+
+        function showToast(text) {
+            const toast = document.getElementById('toast-msg');
+            const toastText = document.getElementById('toast-text');
+            toastText.innerText = text;
+
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            toast.classList.add('opacity-100');
+
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 2000);
+        }
 
         async function switchCamera() {
             currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
@@ -283,15 +305,13 @@
         }
 
         async function toggleFlash() {
-            if (!videoStream || currentFacingMode === 'user') return;
-
-            const track = videoStream.getVideoTracks()[0];
-            const capabilities = track.getCapabilities ? track.getCapabilities() : {};
-
-            if (!capabilities.torch) {
-                alert("El flash/linterna no está soportado por este navegador o cámara trasera.");
+            if (!videoStream || currentFacingMode === 'user') {
+                showToast("Flash no disponible en cámara frontal");
                 return;
             }
+
+            const track = videoStream.getVideoTracks()[0];
+            if (!track) return;
 
             try {
                 isFlashOn = !isFlashOn;
@@ -299,9 +319,11 @@
                     advanced: [{ torch: isFlashOn }]
                 });
                 updateFlashUI();
+                showToast(isFlashOn ? "Linterna ACTIVADA" : "Linterna DESACTIVADA");
             } catch (err) {
                 isFlashOn = false;
                 updateFlashUI();
+                showToast("Flash no soportado en este dispositivo");
             }
         }
 
