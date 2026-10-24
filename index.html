@@ -120,6 +120,12 @@
         <button onclick="capturePhoto()" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white border-4 border-slate-400 hover:scale-105 active:scale-95 transition flex items-center justify-center shadow-2xl">
             <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white border-4 border-slate-900"></div>
         </button>
+
+        <!-- Botón Activar / Desactivar Flash / Linterna -->
+        <button id="btn-flash" onclick="toggleFlash()" class="p-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 active:scale-95 transition text-amber-400 border border-slate-700 flex flex-col items-center">
+            <i data-lucide="zap-off" class="w-6 h-6" id="flash-icon"></i>
+            <span class="text-[10px] font-bold mt-1 text-slate-300" id="flash-text">Flash OFF</span>
+        </button>
     </footer>
 
     <!-- Modal de Configuración -->
@@ -228,6 +234,7 @@
     <script>
         let videoStream = null;
         let currentFacingMode = 'environment';
+        let isFlashOn = false;
         let currentLat = 15.5378, currentLon = -87.7063, currentAlt = 0.0, currentAccuracy = 5.0;
         let currentHeadingDegrees = 0, currentCardinal = 'N';
         let currentAddress = 'Obteniendo ubicación...';
@@ -253,6 +260,8 @@
 
         async function switchCamera() {
             currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
+            isFlashOn = false;
+            updateFlashUI();
             if (videoStream) {
                 videoStream.getTracks().forEach(track => track.stop());
             }
@@ -271,6 +280,46 @@
                 });
                 document.getElementById('camera-feed').srcObject = videoStream;
             } catch (err) {}
+        }
+
+        async function toggleFlash() {
+            if (!videoStream || currentFacingMode === 'user') return;
+
+            const track = videoStream.getVideoTracks()[0];
+            const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+
+            if (!capabilities.torch) {
+                alert("El flash/linterna no está soportado por este navegador o cámara trasera.");
+                return;
+            }
+
+            try {
+                isFlashOn = !isFlashOn;
+                await track.applyConstraints({
+                    advanced: [{ torch: isFlashOn }]
+                });
+                updateFlashUI();
+            } catch (err) {
+                isFlashOn = false;
+                updateFlashUI();
+            }
+        }
+
+        function updateFlashUI() {
+            const btn = document.getElementById('btn-flash');
+            const icon = document.getElementById('flash-icon');
+            const text = document.getElementById('flash-text');
+
+            if (isFlashOn) {
+                btn.className = "p-3.5 rounded-2xl bg-amber-500 text-slate-950 transition flex flex-col items-center border border-amber-400 shadow-[0_0_15px_#f59e0b]";
+                text.innerText = "Flash ON";
+                icon.setAttribute('data-lucide', 'zap');
+            } else {
+                btn.className = "p-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 transition text-amber-400 border border-slate-700 flex flex-col items-center";
+                text.innerText = "Flash OFF";
+                icon.setAttribute('data-lucide', 'zap-off');
+            }
+            lucide.createIcons();
         }
 
         function registerServiceWorker() {
@@ -632,7 +681,6 @@
         }
 
         function drawHudOnCanvas(ctx, width, height, screenWidth) {
-            // Escala adaptada a la resolución HD/4K real del sensor respecto al ancho visible del celular
             const scale = width / (screenWidth || 400); 
             const margin = 12 * scale;
             
@@ -859,7 +907,6 @@
             const screenWidth = container.clientWidth;
             const screenHeight = container.clientHeight;
 
-            // Obtener resolución real nativa del sensor del celular (ej. 1080x1920 / 2160x3840)
             const nativeWidth = video.videoWidth || 1080;
             const nativeHeight = video.videoHeight || 1920;
 
@@ -876,7 +923,6 @@
                 sourceY = (nativeHeight - sourceHeight) / 2;
             }
 
-            // Dimensionar canvas con los megapíxeles nativos para cero pixeleado
             const targetWidth = sourceWidth;
             const targetHeight = sourceHeight;
 
@@ -887,10 +933,8 @@
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
 
-            // Dibujar la foto nítida de la cámara
             ctx.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, targetWidth, targetHeight);
 
-            // Dibujar el HUD con escalado perfecto para alta definición
             drawHudOnCanvas(ctx, targetWidth, targetHeight, screenWidth);
 
             canvas.toBlob((blob) => {
